@@ -68,7 +68,6 @@ public class SecurityConfig {
                         .accessDeniedHandler(new CustomAccessDeniedHandler()))
                 .apply(new CustomFilterConfigurer());
 
-
         return http.build();
     }
 
@@ -91,8 +90,8 @@ public class SecurityConfig {
 
     public class CustomFilterConfigurer extends AbstractHttpConfigurer<CustomFilterConfigurer, HttpSecurity> {
         @Override
-        public void configure(HttpSecurity builder) throws Exception {
-            log.info("SecurityConfiguration.CustomFilterConfigurer.configure excute");
+        public void configure(HttpSecurity builder) {
+            log.info("SecurityConfiguration.CustomFilterConfigurer.configure execute");
             AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
             JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager,
                     jwtTokenProvider, aes128Service, userService, redisUtils);

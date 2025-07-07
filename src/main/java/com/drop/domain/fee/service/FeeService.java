@@ -1,6 +1,6 @@
 package com.drop.domain.fee.service;
 
-import com.drop.domain.fee.data.Fee;
+import com.drop.domain.fee.data.TrainerFee;
 import com.drop.domain.fee.dto.FeeCreateDto;
 import com.drop.domain.fee.dto.FeeDto;
 import com.drop.domain.fee.dto.FeeUpdateDto;
@@ -26,32 +26,32 @@ public class FeeService {
     private final TrainerRepository trainerRepository;
 
     public FeeDto createFee(FeeCreateDto feeCreateDto){
-        Fee fee = null;
+        TrainerFee trainerFee = null;
         if(feeCreateDto.getFeeType().equals(FeeType.TRAINER_FEE)) {
             Trainer trainer = trainerRepository.findById(feeCreateDto.getTrainerId()).orElseThrow(() ->
                     new BusinessException(ErrorCode.USER_NOT_EXIST));
 
-            fee = Fee.create(feeCreateDto, trainer);
+            trainerFee = TrainerFee.create(feeCreateDto, trainer);
         } else if (feeCreateDto.getFeeType().equals(FeeType.GYM_FEE)){
             Gym gym = gymRepository.findById(feeCreateDto.getGymId()).orElseThrow(() ->
                     new BusinessException(ErrorCode.USER_NOT_EXIST));
 
-            fee = Fee.create(feeCreateDto, gym);
+            trainerFee = TrainerFee.create(feeCreateDto);
         }
         
-        Fee savedFee = feeRepository.save(fee);
+        TrainerFee savedTrainerFee = feeRepository.save(trainerFee);
 
-        FeeDto result = modelMapper.map(savedFee, FeeDto.class);
+        FeeDto result = modelMapper.map(savedTrainerFee, FeeDto.class);
         return result;
     }
 
     public FeeDto updateFee(FeeUpdateDto feeUpdateDto){
-        Fee fee = feeRepository.findById(feeUpdateDto.getFeeId()).orElseThrow(() ->
+        TrainerFee trainerFee = feeRepository.findById(feeUpdateDto.getFeeId()).orElseThrow(() ->
                 new BusinessException(ErrorCode.USER_NOT_EXIST));
-        fee.updateFee(feeUpdateDto);
-        Fee savedFee = feeRepository.save(fee);
+        trainerFee.updateFee(feeUpdateDto);
+        TrainerFee savedTrainerFee = feeRepository.save(trainerFee);
 
-        FeeDto result = modelMapper.map(savedFee, FeeDto.class);
+        FeeDto result = modelMapper.map(savedTrainerFee, FeeDto.class);
         return result;
     }
 

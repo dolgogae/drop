@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableCaching
 @EnableJpaAuditing
 @SpringBootApplication//(exclude={SecurityAutoConfiguration.class})
-public class GymoryApplication {
+public class DropApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(GymoryApplication.class, args);
+        SpringApplication.run(DropApplication.class, args);
     }
 }

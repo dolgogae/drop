@@ -50,3 +50,4 @@ public abstract class UserBase extends BaseEntity {
         this.refreshToken = refreshToken;
     }
 }
+

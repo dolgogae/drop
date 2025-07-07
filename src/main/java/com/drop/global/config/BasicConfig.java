@@ -1,6 +1,6 @@
 package com.drop.global.config;
 
-import com.drop.domain.fee.data.Fee;
+import com.drop.domain.fee.data.TrainerFee;
 import com.drop.domain.fee.dto.FeeDto;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.PropertyMap;
@@ -22,7 +22,7 @@ public class BasicConfig {
                 .setFieldMatchingEnabled(true)
                 .setFieldAccessLevel(PRIVATE)
                 .setMethodAccessLevel(PROTECTED);
-        modelMapper.addMappings(new PropertyMap<Fee, FeeDto>() {
+        modelMapper.addMappings(new PropertyMap<TrainerFee, FeeDto>() {
             @Override
             protected void configure() {
                 map(source.getTrainer().getId(), destination.getTrainerId());

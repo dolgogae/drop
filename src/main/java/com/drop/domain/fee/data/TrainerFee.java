@@ -3,7 +3,6 @@ package com.drop.domain.fee.data;
 import com.drop.domain.base.BaseEntity;
 import com.drop.domain.fee.dto.FeeCreateDto;
 import com.drop.domain.fee.dto.FeeUpdateDto;
-import com.drop.domain.user.gym.data.Gym;
 import com.drop.domain.user.trainer.data.Trainer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,11 +15,11 @@ import javax.persistence.*;
 @Entity
 @Builder
 @Getter
-@Table(name = "FEE")
+@Table(name = "TRAINER_FEE")
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class Fee extends BaseEntity {
+public class TrainerFee extends BaseEntity {
 
     @Id
     @Column(name = "FEE_ID")
@@ -31,24 +30,19 @@ public class Fee extends BaseEntity {
     @JoinColumn(name = "USER_ID")
     private Trainer trainer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID")
-    private Gym gym;
-
     private Long price;
     private Integer frequency;
 
-    public static Fee create(FeeCreateDto feeCreateDto, Trainer trainer){
-        return Fee.builder()
+    public static TrainerFee create(FeeCreateDto feeCreateDto, Trainer trainer){
+        return TrainerFee.builder()
                 .trainer(trainer)
                 .price(feeCreateDto.getPrice())
                 .frequency(feeCreateDto.getFrequency())
                 .build();
     }
 
-    public static Fee create(FeeCreateDto feeCreateDto, Gym gym){
-        return Fee.builder()
-                .gym(gym)
+    public static TrainerFee create(FeeCreateDto feeCreateDto){
+        return TrainerFee.builder()
                 .price(feeCreateDto.getPrice())
                 .frequency(feeCreateDto.getFrequency())
                 .build();
