@@ -1,13 +1,15 @@
-package com.drop.global.security;
+package com.drop.global.config;
 
 import com.drop.domain.user.userbase.service.UserService;
 import com.drop.global.redis.RedisUtils;
+import com.drop.global.security.AES128Service;
+import com.drop.global.security.CustomAuthenticationEntryPoint;
 import com.drop.global.security.handler.CustomAccessDeniedHandler;
 import com.drop.global.security.handler.LoginFailureHandler;
 import com.drop.global.security.handler.LoginSuccessHandler;
+import com.drop.global.security.jwt.JwtAuthenticationFilter;
 import com.drop.global.security.jwt.JwtTokenProvider;
 import com.drop.global.security.jwt.JwtVerificationFilter;
-import com.drop.global.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.drop.global.enums.UserRole.*;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @RequiredArgsConstructor
@@ -36,9 +39,17 @@ public class SecurityConfig {
     private final AES128Service aes128Service;
     private final RedisUtils redisUtils;
 
+    private final static String[] permitAllUrl = {
+            "/","/**",
+            "/h2-console",
+            "/login/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/auth/**", "/user/**"};
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
-        
+
         http
                 .headers(header -> header.frameOptions().sameOrigin())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -47,15 +58,9 @@ public class SecurityConfig {
                 .formLogin().disable()
                 .httpBasic().disable()
                 .authorizeHttpRequests(auth -> auth
-                        .antMatchers(
-                                "/","/**",
-                                "/h2-console",
-                                "/login/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/auth/**").permitAll()
-                        .antMatchers("/user/**").hasAnyRole("ADMIN", "USER", "ANONYMOUS")
-                        .antMatchers("/admin/**").hasAnyRole("ADMIN")
+                        .antMatchers(permitAllUrl).permitAll()
+                        .antMatchers("/admin/**").hasAnyRole(ADMIN.name())
+                        .antMatchers("/fee/**").hasAnyRole(GYM.name(), ADMIN.name(), TRAINER.name())
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .exceptionHandling(exception
@@ -63,7 +68,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(new CustomAccessDeniedHandler()))
                 .apply(new CustomFilterConfigurer());
 
-        
+
         return http.build();
     }
 
