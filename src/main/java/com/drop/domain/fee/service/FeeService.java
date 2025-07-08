@@ -1,61 +1,44 @@
 package com.drop.domain.fee.service;
 
-import com.drop.domain.fee.data.TrainerFee;
-import com.drop.domain.fee.dto.FeeCreateDto;
+import com.drop.domain.fee.data.GymFee;
 import com.drop.domain.fee.dto.FeeDto;
-import com.drop.domain.fee.dto.FeeUpdateDto;
-import com.drop.domain.fee.repository.FeeRepository;
+import com.drop.domain.fee.dto.GymFeeCreateDto;
+import com.drop.domain.fee.dto.GymFeeUpdateDto;
+import com.drop.domain.fee.mapper.GymFeeMapper;
+import com.drop.domain.fee.repository.GymFeeRepository;
 import com.drop.domain.user.gym.data.Gym;
 import com.drop.domain.user.gym.repository.GymRepository;
-import com.drop.domain.user.trainer.data.Trainer;
-import com.drop.domain.user.trainer.repository.TrainerRepository;
+import com.drop.domain.user.userbase.service.UserService;
 import com.drop.global.code.error.ErrorCode;
 import com.drop.global.code.error.exception.BusinessException;
-import com.drop.global.enums.FeeType;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class FeeService {
-    private ModelMapper modelMapper;
-
-    private final FeeRepository feeRepository;
+    private final GymFeeRepository gymFeeRepository;
     private final GymRepository gymRepository;
-    private final TrainerRepository trainerRepository;
+    private final UserService userService;
 
-    public FeeDto createFee(FeeCreateDto feeCreateDto){
-        TrainerFee trainerFee = null;
-        if(feeCreateDto.getFeeType().equals(FeeType.TRAINER_FEE)) {
-            Trainer trainer = trainerRepository.findById(feeCreateDto.getTrainerId()).orElseThrow(() ->
-                    new BusinessException(ErrorCode.USER_NOT_EXIST));
+    public FeeDto createGymFee(GymFeeCreateDto gymFeeCreateDto){
+        Long userId = userService.getUserId(gymFeeCreateDto.getToken());
+        Gym gym = gymRepository.findById(userId).orElseThrow(() ->
+            new BusinessException(ErrorCode.USER_NOT_EXIST));
 
-            trainerFee = TrainerFee.create(feeCreateDto, trainer);
-        } else if (feeCreateDto.getFeeType().equals(FeeType.GYM_FEE)){
-            Gym gym = gymRepository.findById(feeCreateDto.getGymId()).orElseThrow(() ->
-                    new BusinessException(ErrorCode.USER_NOT_EXIST));
+        GymFee gymFee = GymFee.create(gymFeeCreateDto, gym);
 
-            trainerFee = TrainerFee.create(feeCreateDto);
-        }
-        
-        TrainerFee savedTrainerFee = feeRepository.save(trainerFee);
+        GymFee savedGymFee = gymFeeRepository.save(gymFee);
 
-        FeeDto result = modelMapper.map(savedTrainerFee, FeeDto.class);
-        return result;
+        return GymFeeMapper.INSTANCE.toDto(savedGymFee);
     }
 
-    public FeeDto updateFee(FeeUpdateDto feeUpdateDto){
-        TrainerFee trainerFee = feeRepository.findById(feeUpdateDto.getFeeId()).orElseThrow(() ->
+    public FeeDto updateFee(GymFeeUpdateDto gymFeeUpdateDto){
+        GymFee gymFee = gymFeeRepository.findById(gymFeeUpdateDto.getFeeId()).orElseThrow(() ->
                 new BusinessException(ErrorCode.USER_NOT_EXIST));
-        trainerFee.updateFee(feeUpdateDto);
-        TrainerFee savedTrainerFee = feeRepository.save(trainerFee);
+        gymFee.updateFee(gymFeeUpdateDto);
+        GymFee savedGymFee = gymFeeRepository.save(gymFee);
 
-        FeeDto result = modelMapper.map(savedTrainerFee, FeeDto.class);
-        return result;
-    }
-
-    public void deleteFee(Long feeId){
-        feeRepository.deleteById(feeId);
+        return GymFeeMapper.INSTANCE.toDto(savedGymFee);
     }
 }

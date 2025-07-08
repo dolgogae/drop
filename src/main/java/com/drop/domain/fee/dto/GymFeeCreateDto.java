@@ -7,8 +7,8 @@ import lombok.*;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class FeeUpdateDto {
-    private Long FeeId;
+public class GymFeeCreateDto {
+    private String token;
     private Long price;
     private Integer frequency;
 }

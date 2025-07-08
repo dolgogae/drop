@@ -1,7 +1,7 @@
 package com.drop.domain.user.trainer.data;
 
 import com.drop.domain.certification.data.Certification;
-import com.drop.domain.fee.data.TrainerFee;
+import com.drop.domain.fee.data.GymFee;
 import com.drop.domain.user.trainer.dto.TrainerCreateDto;
 import com.drop.domain.user.userbase.data.UserBase;
 import lombok.Getter;
@@ -25,7 +25,7 @@ public class Trainer extends UserBase {
     private String longIntroduction;
 
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<TrainerFee> trainerFees;
+    private List<GymFee> gymFees;
 
     public static Trainer create(TrainerCreateDto trainerDto){
         return Trainer.builder()

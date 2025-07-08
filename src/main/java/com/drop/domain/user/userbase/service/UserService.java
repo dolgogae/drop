@@ -18,6 +18,7 @@ import com.drop.global.code.error.ErrorCode;
 import com.drop.global.code.error.exception.BusinessException;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
+import com.drop.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
     private final ModelMapper modelMapper;
     private final UserDtoConverter userDtoConverter;
+    private final JwtTokenProvider jwtTokenProvider;
 
     private final UserJpaRepository userJpaRepository;
 
@@ -43,8 +45,7 @@ public class UserService {
 
         UserBase savedUser = userJpaRepository.save(user);
 
-        UserDto userDto = modelMapper.map(savedUser, UserDto.class);
-        return userDto;
+        return modelMapper.map(savedUser, UserDto.class);
     }
 
     public ResultResponse registerUser(UserCreateDto userCreateDto) {
@@ -71,6 +72,13 @@ public class UserService {
             }
             default -> throw new BusinessException(ErrorCode.USER_ROLE_DOES_NOT_EXISTS);
         }
+    }
+
+    public Long getUserId(String token){
+        String email = jwtTokenProvider.getUserEmail(token);
+        UserBase userBase = userJpaRepository.findByEmail(email).orElseThrow(() ->
+                new BusinessException(ErrorCode.USER_NOT_EXIST));
+        return userBase.getId();
     }
 }
 

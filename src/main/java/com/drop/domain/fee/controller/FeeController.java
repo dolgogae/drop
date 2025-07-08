@@ -1,8 +1,8 @@
 package com.drop.domain.fee.controller;
 
-import com.drop.domain.fee.dto.FeeCreateDto;
 import com.drop.domain.fee.dto.FeeDto;
-import com.drop.domain.fee.dto.FeeUpdateDto;
+import com.drop.domain.fee.dto.GymFeeCreateDto;
+import com.drop.domain.fee.dto.GymFeeUpdateDto;
 import com.drop.domain.fee.service.FeeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 
 @Slf4j
 @RestController
@@ -21,15 +20,14 @@ public class FeeController {
     private final FeeService feeService;
 
     @PostMapping
-    public ResponseEntity<FeeDto> createFee(@RequestBody @Valid FeeCreateDto feeCreateDto){
-        FeeDto result = feeService.createFee(feeCreateDto);
-        ArrayList<Object> objects = new ArrayList<>();
+    public ResponseEntity<FeeDto> createFee(@RequestBody @Valid GymFeeCreateDto gymFeeCreateDto){
+        FeeDto result = feeService.createGymFee(gymFeeCreateDto);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
     @PutMapping
-    public ResponseEntity<FeeDto> updateFee(@RequestBody @Valid FeeUpdateDto feeUpdateDto){
-        FeeDto result = feeService.updateFee(feeUpdateDto);
+    public ResponseEntity<FeeDto> updateFee(@RequestBody @Valid GymFeeUpdateDto gymFeeUpdateDto){
+        FeeDto result = feeService.updateFee(gymFeeUpdateDto);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

@@ -1,6 +1,6 @@
 package com.drop.domain.user.gym.data;
 
-import com.drop.domain.fee.data.TrainerFee;
+import com.drop.domain.fee.data.GymFee;
 import com.drop.domain.user.gym.dto.GymCreateDto;
 import com.drop.domain.user.userbase.data.UserBase;
 import lombok.AllArgsConstructor;
@@ -26,7 +26,7 @@ public class Gym extends UserBase {
     private UsageInfo usageInfo;
 
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<TrainerFee> trainerFees;
+    private List<GymFee> gymFees;
 
     public static Gym create(GymCreateDto gymDto){
         return Gym.builder()

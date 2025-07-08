@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String encryptedRefreshToken = aes128Service.encryptAes(refreshToken);
 
         jwtTokenProvider.accessTokenSetHeader(accessToken, response);
-        jwtTokenProvider.refresshTokenSetHeader(encryptedRefreshToken, response);
+        jwtTokenProvider.refreshTokenSetHeader(encryptedRefreshToken, response);
 
         UserDto findUser = userService
                 .findUserAndUpdateTokens(customUserDetails.getId(), accessToken, refreshToken);

@@ -121,7 +121,6 @@ public class JwtTokenProvider {
     }
 
     public UserRole getUserPermission(String refreshToken){
-        Claims claims = parseClaims(refreshToken);
         String role = (String)parseClaims(refreshToken).get("userRole");
         return UserRole.fromKey(role);
     }
@@ -191,7 +190,7 @@ public class JwtTokenProvider {
         response.setHeader(AUTHORIZATION_HEADER, headerValue);
     }
 
-    public void refresshTokenSetHeader(String refreshToken, HttpServletResponse response) {
+    public void refreshTokenSetHeader(String refreshToken, HttpServletResponse response) {
         response.setHeader("Refresh", refreshToken);
     }
 
