@@ -25,7 +25,7 @@ public class Gym extends UserBase {
     @Embedded
     private UsageInfo usageInfo;
 
-    @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "gym", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<GymFee> gymFees;
 
     public static Gym create(GymCreateDto gymDto){

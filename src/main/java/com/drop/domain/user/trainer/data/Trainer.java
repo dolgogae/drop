@@ -1,14 +1,16 @@
 package com.drop.domain.user.trainer.data;
 
 import com.drop.domain.certification.data.Certification;
-import com.drop.domain.fee.data.GymFee;
 import com.drop.domain.user.trainer.dto.TrainerCreateDto;
 import com.drop.domain.user.userbase.data.UserBase;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.OneToMany;
 import java.util.List;
 
 @Getter
@@ -23,9 +25,6 @@ public class Trainer extends UserBase {
 
     private String shortIntroduction;
     private String longIntroduction;
-
-    @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<GymFee> gymFees;
 
     public static Trainer create(TrainerCreateDto trainerDto){
         return Trainer.builder()

@@ -15,7 +15,7 @@ import javax.persistence.*;
 @Entity
 @Builder
 @Getter
-@Table(name = "TRAINER_FEE")
+@Table(name = "GYM_FEE")
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
