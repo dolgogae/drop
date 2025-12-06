@@ -1,6 +1,6 @@
 package com.drop.domain.fee.controller;
 
-import com.drop.domain.fee.dto.FeeDto;
+import com.drop.domain.fee.dto.GymFeeDto;
 import com.drop.domain.fee.dto.GymFeeCreateDto;
 import com.drop.domain.fee.dto.GymFeeUpdateDto;
 import com.drop.domain.fee.service.FeeService;
@@ -20,14 +20,20 @@ public class FeeController {
     private final FeeService feeService;
 
     @PostMapping
-    public ResponseEntity<FeeDto> createFee(@RequestBody @Valid GymFeeCreateDto gymFeeCreateDto){
-        FeeDto result = feeService.createGymFee(gymFeeCreateDto);
+    public ResponseEntity<GymFeeDto> createGymFee(@RequestBody @Valid GymFeeCreateDto gymFeeCreateDto){
+        GymFeeDto result = feeService.createGymFee(gymFeeCreateDto);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<GymFeeDto> getGymFee(@PathVariable Long id){
+        GymFeeDto result = feeService.getGymFee(id);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
     @PutMapping
-    public ResponseEntity<FeeDto> updateFee(@RequestBody @Valid GymFeeUpdateDto gymFeeUpdateDto){
-        FeeDto result = feeService.updateFee(gymFeeUpdateDto);
+    public ResponseEntity<GymFeeDto> updateGymFee(@RequestBody @Valid GymFeeUpdateDto gymFeeUpdateDto){
+        GymFeeDto result = feeService.updateFee(gymFeeUpdateDto);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

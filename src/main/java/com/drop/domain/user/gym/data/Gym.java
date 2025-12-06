@@ -18,6 +18,7 @@ import java.util.List;
 @SuperBuilder
 @DiscriminatorValue("GYM")
 public class Gym extends UserBase {
+    private String name;
     private String location;
     private String phoneNumber;
     private String etcInfo;    // nearby any stations
@@ -34,6 +35,7 @@ public class Gym extends UserBase {
                 .email(gymDto.getEmail())
                 .password(gymDto.getPassword())
                 .role(gymDto.getRole())
+                .name(gymDto.getName())
                 .location(gymDto.getLocation())
                 .phoneNumber(gymDto.getPhoneNumber())
                 .etcInfo(gymDto.getEtcInfo())

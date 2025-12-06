@@ -9,6 +9,7 @@ import com.drop.domain.user.member.service.MemberService;
 import com.drop.domain.user.trainer.dto.TrainerCreateDto;
 import com.drop.domain.user.trainer.dto.TrainerDto;
 import com.drop.domain.user.trainer.service.TrainerService;
+import com.drop.domain.user.userbase.mapper.UserMapper;
 import com.drop.global.enums.UserRole;
 import com.drop.domain.user.userbase.data.UserBase;
 import com.drop.domain.user.userbase.dto.UserCreateDto;
@@ -21,14 +22,13 @@ import com.drop.global.code.result.ResultResponse;
 import com.drop.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
-    private final ModelMapper modelMapper;
+    private final UserMapper userMapper;
     private final UserDtoConverter userDtoConverter;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -45,7 +45,7 @@ public class UserService {
 
         UserBase savedUser = userJpaRepository.save(user);
 
-        return modelMapper.map(savedUser, UserDto.class);
+        return userMapper.toDto(savedUser);
     }
 
     public ResultResponse registerUser(UserCreateDto userCreateDto) {
@@ -81,4 +81,3 @@ public class UserService {
         return userBase.getId();
     }
 }
-

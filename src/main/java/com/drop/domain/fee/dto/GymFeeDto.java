@@ -7,7 +7,8 @@ import lombok.*;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class FeeDto {
+public class GymFeeDto {
+    private Long id;
     private Long gymId;
     private Long price;
     private Integer frequency;

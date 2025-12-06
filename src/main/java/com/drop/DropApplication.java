@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @EnableCaching
 @EnableJpaAuditing
-@SpringBootApplication//(exclude={SecurityAutoConfiguration.class})
+@SpringBootApplication
 public class DropApplication {
 
     public static void main(String[] args) {

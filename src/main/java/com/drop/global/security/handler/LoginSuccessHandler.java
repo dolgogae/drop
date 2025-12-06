@@ -1,41 +1,43 @@
 package com.drop.global.security.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException, IOException {
-        HttpSession session = request.getSession();
-
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         String accessToken = response.getHeader("Authorization");
         String refreshToken = response.getHeader("Refresh");
 
-        log.info(accessToken);
-        log.info(refreshToken);
+        log.info("Login success - accessToken: {}", accessToken);
+        log.info("Login success - refreshToken: {}", refreshToken);
 
-        String redirectUrl = getRedirectUrl(accessToken, refreshToken);
-        log.info(redirectUrl);
+        Map<String, Object> tokenData = new HashMap<>();
+        tokenData.put("accessToken", accessToken);
+        tokenData.put("refreshToken", refreshToken);
 
-        response.sendRedirect(redirectUrl);
-    }
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("status", 200);
+        responseBody.put("message", "로그인 성공");
+        responseBody.put("data", tokenData);
 
-    /**
-     * @param accessToken
-     * @param refreshToken
-     * @return
-     */
-    private String getRedirectUrl(String accessToken, String refreshToken){
-        return "/api/auth/login/callback" +
-                "?accessToken=" + accessToken +
-                "&refreshToken=" + refreshToken;
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        response.getWriter().write(objectMapper.writeValueAsString(responseBody));
     }
 }
