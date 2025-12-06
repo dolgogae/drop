@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "drop",
-    "slug": "drop",
+    "name": "drop-front",
+    "slug": "drop-front",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "drop",
+    "scheme": "drop-front",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
