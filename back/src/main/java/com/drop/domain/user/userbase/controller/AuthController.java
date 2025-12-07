@@ -1,15 +1,23 @@
 package com.drop.domain.user.userbase.controller;
 
+import com.drop.domain.user.gym.dto.GymCreateDto;
+import com.drop.domain.user.gym.dto.GymDto;
 import com.drop.domain.user.gym.service.GymService;
+import com.drop.domain.user.member.dto.MemberCreateDto;
+import com.drop.domain.user.member.dto.MemberDto;
+import com.drop.domain.user.member.service.MemberService;
+import com.drop.domain.user.trainer.dto.TrainerCreateDto;
+import com.drop.domain.user.trainer.dto.TrainerDto;
+import com.drop.domain.user.trainer.service.TrainerService;
 import com.drop.domain.user.userbase.dto.TokenDto;
 import com.drop.domain.user.userbase.dto.UserCreateDto;
 import com.drop.domain.user.userbase.service.UserDtoConverter;
 import com.drop.domain.user.userbase.service.UserService;
-import com.drop.domain.user.member.service.MemberService;
-import com.drop.domain.user.trainer.service.TrainerService;
 import com.drop.global.code.result.ResultCode;
-import io.swagger.v3.oas.annotations.Operation;
 import com.drop.global.code.result.ResultResponse;
+import com.drop.global.enums.UserRole;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +32,7 @@ import javax.validation.constraints.NotBlank;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
+@Tag(name = "Auth", description = "인증 API")
 public class AuthController {
     private final UserService userService;
     private final TrainerService trainerService;
@@ -33,13 +42,53 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final UserDtoConverter userDtoConverter;
 
+    @Operation(summary = "일반 회원가입", description = "기본 정보만으로 회원가입 (레거시)")
     @PostMapping("/sign-up")
-    public ResponseEntity<ResultResponse> signIn(
+    public ResponseEntity<ResultResponse> signUp(
             @RequestBody @Valid UserCreateDto userCreateDto
     ){
         userCreateDto.setPassword(passwordEncoder.encode(userCreateDto.getPassword()));
 
         ResultResponse result = userService.registerUser(userCreateDto);
+        return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
+    }
+
+    @Operation(summary = "일반 회원(Member) 가입", description = "일반 회원 전용 회원가입")
+    @PostMapping("/sign-up/member")
+    public ResponseEntity<ResultResponse> signUpMember(
+            @RequestBody @Valid MemberCreateDto memberCreateDto
+    ){
+        memberCreateDto.setPassword(passwordEncoder.encode(memberCreateDto.getPassword()));
+        memberCreateDto.setRole(UserRole.MEMBER);
+
+        MemberDto savedMember = memberService.createMember(memberCreateDto);
+        ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedMember);
+        return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
+    }
+
+    @Operation(summary = "트레이너(Trainer) 가입", description = "트레이너 전용 회원가입")
+    @PostMapping("/sign-up/trainer")
+    public ResponseEntity<ResultResponse> signUpTrainer(
+            @RequestBody @Valid TrainerCreateDto trainerCreateDto
+    ){
+        trainerCreateDto.setPassword(passwordEncoder.encode(trainerCreateDto.getPassword()));
+        trainerCreateDto.setRole(UserRole.TRAINER);
+
+        TrainerDto savedTrainer = trainerService.creatTrainer(trainerCreateDto);
+        ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedTrainer);
+        return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
+    }
+
+    @Operation(summary = "체육관(Gym) 가입", description = "체육관 전용 회원가입")
+    @PostMapping("/sign-up/gym")
+    public ResponseEntity<ResultResponse> signUpGym(
+            @RequestBody @Valid GymCreateDto gymCreateDto
+    ){
+        gymCreateDto.setPassword(passwordEncoder.encode(gymCreateDto.getPassword()));
+        gymCreateDto.setRole(UserRole.GYM);
+
+        GymDto savedGym = gymService.createGym(gymCreateDto);
+        ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedGym);
         return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
     }
 

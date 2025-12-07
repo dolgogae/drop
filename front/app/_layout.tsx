@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Provider, useSelector } from 'react-redux';
 import LoadingSpinner from '../components/LoadingSpinner';
+import LanguageToggle from '../components/LanguageToggle';
+import { I18nProvider } from '../contexts/i18n';
 import { RootState, store } from '../store';
 
 function RootLayoutNav() {
@@ -48,6 +50,7 @@ function RootLayoutNav() {
 
   return (
     <View style={styles.container}>
+      <LanguageToggle />
       <Stack screenOptions={{ headerShown: false }} />
     </View>
   );
@@ -56,7 +59,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <RootLayoutNav />
+      <I18nProvider>
+        <RootLayoutNav />
+      </I18nProvider>
     </Provider>
   );
 }

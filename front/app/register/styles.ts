@@ -1,18 +1,30 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 24,
+    paddingVertical: 48,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1B4332', // 다크 그린
+    color: '#1B4332',
     marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1B4332',
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    marginTop: 8,
   },
   input: {
     width: '100%',
@@ -26,14 +38,29 @@ const styles = StyleSheet.create({
     color: '#081C15',
     backgroundColor: '#F8F9FA',
   },
+  textArea: {
+    width: '100%',
+    minHeight: 100,
+    borderColor: '#1B4332',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    color: '#081C15',
+    backgroundColor: '#F8F9FA',
+    textAlignVertical: 'top',
+  },
   button: {
     width: '100%',
     height: 48,
-    backgroundColor: '#1B4332', // 다크 그린
+    backgroundColor: '#1B4332',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    marginTop: 8,
   },
   buttonText: {
     color: '#fff',
@@ -50,6 +77,98 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textDecorationLine: 'underline',
   },
+  roleContainer: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  roleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#FAFAFA',
+  },
+  roleCardSelected: {
+    borderColor: '#1B4332',
+    backgroundColor: '#E8F5E9',
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#1B4332',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#1B4332',
+  },
+  roleTextContainer: {
+    flex: 1,
+  },
+  roleLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  roleLabelSelected: {
+    color: '#1B4332',
+  },
+  roleDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  checkboxContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#FAFAFA',
+  },
+  checkboxRowSelected: {
+    borderColor: '#1B4332',
+    backgroundColor: '#E8F5E9',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#1B4332',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#1B4332',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
 });
 
-export default styles; 
+export default styles;
