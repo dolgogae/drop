@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { useI18n } from '../../contexts/i18n';
 import { setTokens } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
+import { useI18n } from '../../contexts/i18n';
 import styles from './styles';
 
 export default function LoginScreen() {
