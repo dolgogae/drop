@@ -28,7 +28,7 @@ export default function LoginScreen() {
           refreshToken: data.data.refreshToken,
         }));
         Alert.alert('로그인 성공!', '메인페이지로 이동합니다.');
-        router.replace('/');
+        router.replace('/(tabs)');
       } else {
         Alert.alert('로그인 실패', data.message || '이메일 또는 비밀번호를 확인하세요.');
       }

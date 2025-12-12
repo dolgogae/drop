@@ -36,12 +36,7 @@ public enum ErrorCode {
 
     // Encrypt
     ENCRYPTION_FAILED(400, "E001", "Encryption failed"),
-    DECRYPTION_FAILED(400, "E002", "Decryption failed"),
-
-    // Place/Gym
-    GYM_NOT_FOUND(404, "P001", "등록된 체육관을 찾을 수 없습니다."),
-    GYM_ALREADY_REGISTERED(400, "P002", "이미 등록된 체육관입니다."),
-    GYM_ACCESS_DENIED(403, "P003", "해당 체육관에 대한 접근 권한이 없습니다.");
+    DECRYPTION_FAILED(400, "E002", "Decryption failed");
 
     private int status;
     private final String code;

@@ -23,18 +23,21 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading) return;
 
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+    const inTabsGroup = segments[0] === '(tabs)';
+
     // 토큰이 없으면 /login, /register만 허용
     if (!accessToken) {
-      if (segments[0] !== 'login' && segments[0] !== 'register') {
+      if (!inAuthGroup) {
         router.replace('/login');
       }
       return;
     }
 
-    // 토큰이 있으면 /login, /register 접근 시 /로 리다이렉트
+    // 토큰이 있으면 /login, /register 접근 시 탭 홈으로 리다이렉트
     if (accessToken) {
-      if (segments[0] === 'login' || segments[0] === 'register') {
-        router.replace('/');
+      if (inAuthGroup) {
+        router.replace('/(tabs)');
       }
     }
   }, [isLoading, accessToken, segments]);
