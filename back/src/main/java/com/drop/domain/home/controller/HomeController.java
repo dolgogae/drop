@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,6 +27,7 @@ public class HomeController {
     @Operation(summary = "홈 화면 요약 조회", description = "홈 화면에 필요한 근처 체육관 개수와 내 체육관 미리보기를 조회합니다.")
     @GetMapping("/summary")
     public ResponseEntity<ResultResponse> getHomeSummary(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "위치 모드 (current: 현재 위치, last: 마지막 위치)")
             @RequestParam(required = false, defaultValue = "current") String locationMode,
             @Parameter(description = "위도 (grid 단위)")
@@ -32,7 +35,16 @@ public class HomeController {
             @Parameter(description = "경도 (grid 단위)")
             @RequestParam(required = false) Double lngGrid
     ) {
-        HomeSummaryDto summary = homeService.getHomeSummary(locationMode, latGrid, lngGrid);
+        Long memberId = null;
+        if (userDetails != null) {
+            try {
+                memberId = Long.parseLong(userDetails.getUsername());
+            } catch (NumberFormatException e) {
+                // 인증되지 않은 사용자는 내 체육관 없이 표시
+            }
+        }
+
+        HomeSummaryDto summary = homeService.getHomeSummary(memberId, locationMode, latGrid, lngGrid);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.HOME_SUMMARY_SUCCESS, summary));
     }
 }

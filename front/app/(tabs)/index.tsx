@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
+  Linking,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import axiosInstance from '../../utils/axiosInstance';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +23,7 @@ interface MyGymPreview {
   gymId: number;
   name: string;
   isFavorite: boolean;
+  isDeleted: boolean;
 }
 
 interface HomeSummary {
@@ -30,20 +33,86 @@ interface HomeSummary {
   hasMoreMyGyms: boolean;
 }
 
-type HomeState = 'loading' | 'success' | 'empty' | 'error';
+type HomeState = 'loading' | 'success' | 'empty' | 'error' | 'permission_denied';
+
+// 위치를 그리드로 스냅 (프라이버시 보호 - 약 500m 단위)
+const snapToGrid = (value: number, gridSize: number = 0.005): number => {
+  return Math.round(value / gridSize) * gridSize;
+};
 
 export default function HomeScreen() {
   const router = useRouter();
   const [homeState, setHomeState] = useState<HomeState>('loading');
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const fetchHomeSummary = useCallback(async () => {
+  // 위치 권한 확인 및 요청
+  const checkLocationPermission = useCallback(async () => {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      setLocationPermission(status);
+      return status;
+    } catch (error) {
+      console.error('위치 권한 확인 실패:', error);
+      return null;
+    }
+  }, []);
+
+  // 위치 권한 요청
+  const requestLocationPermission = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status);
+
+      if (status === Location.PermissionStatus.GRANTED) {
+        // 권한 허용되면 위치 가져오기
+        await getCurrentLocation();
+        fetchHomeSummary();
+      } else {
+        setHomeState('permission_denied');
+      }
+    } catch (error) {
+      console.error('위치 권한 요청 실패:', error);
+      setHomeState('permission_denied');
+    }
+  }, []);
+
+  // 현재 위치 가져오기
+  const getCurrentLocation = useCallback(async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const lat = snapToGrid(location.coords.latitude);
+      const lng = snapToGrid(location.coords.longitude);
+
+      setCurrentLocation({ lat, lng });
+      return { lat, lng };
+    } catch (error) {
+      console.error('위치 가져오기 실패:', error);
+      return null;
+    }
+  }, []);
+
+  // 홈 데이터 조회
+  const fetchHomeSummary = useCallback(async (location?: { lat: number; lng: number } | null) => {
     try {
       setHomeState('loading');
       setErrorMessage('');
 
-      const response = await axiosInstance.get('/home/summary');
+      const params: Record<string, any> = {};
+
+      const loc = location || currentLocation;
+      if (loc) {
+        params.latGrid = loc.lat;
+        params.lngGrid = loc.lng;
+        params.locationMode = 'current';
+      }
+
+      const response = await axiosInstance.get('/home/summary', { params });
 
       if (response.data?.data) {
         const data: HomeSummary = response.data.data;
@@ -58,22 +127,46 @@ export default function HomeScreen() {
       setHomeState('error');
       setErrorMessage('네트워크 오류가 발생했습니다.');
     }
-  }, []);
+  }, [currentLocation]);
 
+  // 초기 로딩
   useEffect(() => {
-    fetchHomeSummary();
-  }, [fetchHomeSummary]);
+    const initializeHome = async () => {
+      const permissionStatus = await checkLocationPermission();
+
+      if (permissionStatus === Location.PermissionStatus.GRANTED) {
+        const location = await getCurrentLocation();
+        await fetchHomeSummary(location);
+      } else if (permissionStatus === Location.PermissionStatus.DENIED) {
+        // 이전에 거부한 경우 - 권한 없이 데이터 로드
+        setHomeState('permission_denied');
+      } else {
+        // 아직 결정하지 않은 경우 - 권한 요청
+        await requestLocationPermission();
+      }
+    };
+
+    initializeHome();
+  }, []);
 
   // 앱 포그라운드 복귀 시 데이터 갱신
   useEffect(() => {
     let lastFetchTime = Date.now();
     const REFRESH_INTERVAL = 10 * 60 * 1000; // 10분
 
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
+        // 권한 상태 다시 확인 (설정에서 변경했을 수 있음)
+        const status = await checkLocationPermission();
+
         const now = Date.now();
         if (now - lastFetchTime > REFRESH_INTERVAL) {
-          fetchHomeSummary();
+          if (status === Location.PermissionStatus.GRANTED) {
+            const location = await getCurrentLocation();
+            fetchHomeSummary(location);
+          } else {
+            fetchHomeSummary();
+          }
           lastFetchTime = now;
         }
       }
@@ -81,7 +174,7 @@ export default function HomeScreen() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [fetchHomeSummary]);
+  }, [fetchHomeSummary, checkLocationPermission, getCurrentLocation]);
 
   const handleGoToMap = () => {
     router.push('/(tabs)/map');
@@ -91,12 +184,50 @@ export default function HomeScreen() {
     router.push('/register');
   };
 
-  const handleGymPress = (gymId: number) => {
+  const handleGymPress = (gym: MyGymPreview) => {
+    if (gym.isDeleted) {
+      // 삭제된 체육관은 클릭 불가
+      return;
+    }
     // TODO: 체육관 상세 페이지로 이동
-    console.log('체육관 상세:', gymId);
+    console.log('체육관 상세:', gym.gymId);
+  };
+
+  // 내 체육관에서 제거
+  const handleRemoveGym = async (gymId: number) => {
+    try {
+      await axiosInstance.delete(`/my-gyms/${gymId}`);
+      // 성공 시 목록에서 제거
+      if (summary) {
+        setSummary({
+          ...summary,
+          myGymsPreview: summary.myGymsPreview.filter((g) => g.gymId !== gymId),
+        });
+      }
+    } catch (error) {
+      console.error('체육관 제거 실패:', error);
+    }
   };
 
   const handleRetry = () => {
+    if (locationPermission === Location.PermissionStatus.GRANTED) {
+      getCurrentLocation().then((location) => fetchHomeSummary(location));
+    } else {
+      fetchHomeSummary();
+    }
+  };
+
+  // 설정 앱 열기
+  const openSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
+    }
+  };
+
+  // 위치 권한 없이 계속 진행
+  const continueWithoutLocation = () => {
     fetchHomeSummary();
   };
 
@@ -124,6 +255,57 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // 위치 권한 거부 상태 (FR-6)
+  if (homeState === 'permission_denied') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* 권한 안내 카드 */}
+          <View style={styles.permissionCard}>
+            <Ionicons name="location-outline" size={48} color="#588157" />
+            <Text style={styles.permissionTitle}>위치 권한이 필요해요</Text>
+            <Text style={styles.permissionDescription}>
+              근처 체육관을 찾으려면 위치 권한이 필요합니다.
+              {'\n'}권한을 허용하시거나 주소로 검색해보세요.
+            </Text>
+
+            <View style={styles.permissionButtons}>
+              <TouchableOpacity
+                style={styles.permissionButton}
+                onPress={locationPermission === Location.PermissionStatus.DENIED ? openSettings : requestLocationPermission}
+              >
+                <Ionicons name="location" size={18} color="#fff" />
+                <Text style={styles.permissionButtonText}>
+                  {locationPermission === Location.PermissionStatus.DENIED ? '설정에서 허용' : '권한 허용'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.permissionButton, styles.permissionButtonSecondary]}
+                onPress={continueWithoutLocation}
+              >
+                <Ionicons name="search" size={18} color="#588157" />
+                <Text style={[styles.permissionButtonText, styles.permissionButtonTextSecondary]}>
+                  위치 없이 계속
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* FAB */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleRegister}
+          accessibilityLabel="체육관 등록"
+          accessibilityRole="button"
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -170,7 +352,7 @@ export default function HomeScreen() {
             근처 체육관 <Text style={styles.summaryCount}>{summary?.nearbyGymCount || 0}</Text>개
           </Text>
           <Text style={styles.summarySubtitle}>
-            {summary?.nearbyBasis === 'current' ? '현재 위치 기준' : '마지막으로 본 위치'}
+            {summary?.nearbyBasis === 'current' ? '현재 위치 기준' : '전체 체육관'}
           </Text>
           <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
             <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
@@ -209,15 +391,41 @@ export default function HomeScreen() {
             {summary?.myGymsPreview.map((gym) => (
               <TouchableOpacity
                 key={gym.gymId}
-                style={styles.gymPreviewCard}
-                onPress={() => handleGymPress(gym.gymId)}
-                activeOpacity={0.7}
+                style={[
+                  styles.gymPreviewCard,
+                  gym.isDeleted && styles.gymPreviewCardDeleted,
+                ]}
+                onPress={() => handleGymPress(gym)}
+                activeOpacity={gym.isDeleted ? 1 : 0.7}
               >
+                {/* X 버튼 (우상단) */}
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => handleRemoveGym(gym.gymId)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={16} color="#999" />
+                </TouchableOpacity>
+
                 <View style={styles.gymPreviewContent}>
-                  <Text style={styles.gymPreviewName} numberOfLines={1}>
-                    {gym.name}
+                  {gym.isDeleted && (
+                    <Ionicons
+                      name="alert-circle"
+                      size={16}
+                      color="#e63946"
+                      style={styles.deletedIcon}
+                    />
+                  )}
+                  <Text
+                    style={[
+                      styles.gymPreviewName,
+                      gym.isDeleted && styles.gymPreviewNameDeleted,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {gym.isDeleted ? '없어진 체육관' : gym.name}
                   </Text>
-                  {gym.isFavorite && (
+                  {!gym.isDeleted && gym.isFavorite && (
                     <Ionicons name="star" size={16} color="#FFD700" style={styles.favoriteIcon} />
                   )}
                 </View>
@@ -301,6 +509,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // 권한 안내 카드 (FR-6)
+  permissionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#344E41',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  permissionDescription: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  permissionButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  permissionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#588157',
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  permissionButtonSecondary: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#588157',
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  permissionButtonTextSecondary: {
+    color: '#588157',
+  },
+
   // 섹션 헤더
   sectionHeader: {
     flexDirection: 'row',
@@ -329,6 +590,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
+    paddingTop: 24,
     marginRight: 12,
     minWidth: 140,
     shadowColor: '#000',
@@ -336,6 +598,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    position: 'relative',
+  },
+  gymPreviewCardDeleted: {
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#e63946',
+    borderStyle: 'dashed',
   },
   gymPreviewContent: {
     flexDirection: 'row',
@@ -347,8 +616,26 @@ const styles = StyleSheet.create({
     color: '#344E41',
     flex: 1,
   },
+  gymPreviewNameDeleted: {
+    color: '#999',
+    fontStyle: 'italic',
+  },
   favoriteIcon: {
     marginLeft: 6,
+  },
+  deletedIcon: {
+    marginRight: 4,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // 빈 상태

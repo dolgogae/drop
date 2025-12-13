@@ -1,4 +1,4 @@
-package com.drop.domain.home.dto;
+package com.drop.domain.favorite.dto;
 
 import lombok.*;
 
@@ -7,9 +7,9 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MyGymPreviewDto {
+public class FavoriteGymDto {
     private Long gymId;
     private String name;
+    private String location;
     private Boolean isFavorite;
-    private Boolean isDeleted;  // 체육관이 삭제되었는지 여부
 }
