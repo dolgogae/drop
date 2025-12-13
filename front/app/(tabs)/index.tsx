@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import axiosInstance from '../../utils/axiosInstance';
+import { HomeState, LocationMode, LocationModeText } from '../../constants/enums';
 
 const { width } = Dimensions.get('window');
 
@@ -28,12 +29,10 @@ interface MyGymPreview {
 
 interface HomeSummary {
   nearbyGymCount: number;
-  nearbyBasis: 'current' | 'last';
+  nearbyBasis: LocationMode;
   myGymsPreview: MyGymPreview[];
   hasMoreMyGyms: boolean;
 }
-
-type HomeState = 'loading' | 'success' | 'empty' | 'error' | 'permission_denied';
 
 // 위치를 그리드로 스냅 (프라이버시 보호 - 약 500m 단위)
 const snapToGrid = (value: number, gridSize: number = 0.005): number => {
@@ -42,7 +41,7 @@ const snapToGrid = (value: number, gridSize: number = 0.005): number => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [homeState, setHomeState] = useState<HomeState>('loading');
+  const [homeState, setHomeState] = useState<HomeState>(HomeState.LOADING);
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
@@ -71,11 +70,11 @@ export default function HomeScreen() {
         await getCurrentLocation();
         fetchHomeSummary();
       } else {
-        setHomeState('permission_denied');
+        setHomeState(HomeState.PERMISSION_DENIED);
       }
     } catch (error) {
       console.error('위치 권한 요청 실패:', error);
-      setHomeState('permission_denied');
+      setHomeState(HomeState.PERMISSION_DENIED);
     }
   }, []);
 
@@ -100,7 +99,7 @@ export default function HomeScreen() {
   // 홈 데이터 조회
   const fetchHomeSummary = useCallback(async (location?: { lat: number; lng: number } | null) => {
     try {
-      setHomeState('loading');
+      setHomeState(HomeState.LOADING);
       setErrorMessage('');
 
       const params: Record<string, any> = {};
@@ -109,7 +108,7 @@ export default function HomeScreen() {
       if (loc) {
         params.latGrid = loc.lat;
         params.lngGrid = loc.lng;
-        params.locationMode = 'current';
+        params.locationMode = LocationMode.CURRENT;
       }
 
       const response = await axiosInstance.get('/home/summary', { params });
@@ -117,14 +116,14 @@ export default function HomeScreen() {
       if (response.data?.data) {
         const data: HomeSummary = response.data.data;
         setSummary(data);
-        setHomeState('success');
+        setHomeState(HomeState.SUCCESS);
       } else {
-        setHomeState('error');
+        setHomeState(HomeState.ERROR);
         setErrorMessage('데이터를 불러올 수 없습니다.');
       }
     } catch (error: any) {
       console.error('홈 데이터 조회 실패:', error);
-      setHomeState('error');
+      setHomeState(HomeState.ERROR);
       setErrorMessage('네트워크 오류가 발생했습니다.');
     }
   }, [currentLocation]);
@@ -139,7 +138,7 @@ export default function HomeScreen() {
         await fetchHomeSummary(location);
       } else if (permissionStatus === Location.PermissionStatus.DENIED) {
         // 이전에 거부한 경우 - 권한 없이 데이터 로드
-        setHomeState('permission_denied');
+        setHomeState(HomeState.PERMISSION_DENIED);
       } else {
         // 아직 결정하지 않은 경우 - 권한 요청
         await requestLocationPermission();
@@ -196,7 +195,7 @@ export default function HomeScreen() {
   // 내 체육관에서 제거
   const handleRemoveGym = async (gymId: number) => {
     try {
-      await axiosInstance.delete(`/my-gyms/${gymId}`);
+      await axiosInstance.delete(`/member-gym/${gymId}`);
       // 성공 시 목록에서 제거
       if (summary) {
         setSummary({
@@ -232,7 +231,7 @@ export default function HomeScreen() {
   };
 
   // 로딩 상태 - 스켈레톤 UI
-  if (homeState === 'loading') {
+  if (homeState === HomeState.LOADING) {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -260,7 +259,7 @@ export default function HomeScreen() {
   }
 
   // 위치 권한 거부 상태 (FR-6)
-  if (homeState === 'permission_denied') {
+  if (homeState === HomeState.PERMISSION_DENIED) {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -311,7 +310,7 @@ export default function HomeScreen() {
   }
 
   // 오류 상태
-  if (homeState === 'error') {
+  if (homeState === HomeState.ERROR) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
@@ -352,7 +351,9 @@ export default function HomeScreen() {
             근처 체육관 <Text style={styles.summaryCount}>{summary?.nearbyGymCount || 0}</Text>개
           </Text>
           <Text style={styles.summarySubtitle}>
-            {summary?.nearbyBasis === 'current' ? '현재 위치 기준' : '전체 체육관'}
+            {summary?.nearbyBasis === LocationMode.CURRENT
+              ? LocationModeText[LocationMode.CURRENT]
+              : '전체 체육관'}
           </Text>
           <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
             <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />

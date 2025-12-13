@@ -1,8 +1,8 @@
-package com.drop.domain.favorite.controller;
+package com.drop.domain.membergym.controller;
 
-import com.drop.domain.favorite.dto.FavoriteGymDto;
-import com.drop.domain.favorite.dto.FavoriteRequestDto;
-import com.drop.domain.favorite.service.FavoriteService;
+import com.drop.domain.membergym.dto.MemberGymDto;
+import com.drop.domain.membergym.dto.MemberGymRequestDto;
+import com.drop.domain.membergym.service.MemberGymService;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Favorite", description = "내 체육관 (즐겨찾기) API")
+@Tag(name = "MemberGym", description = "내 체육관 (즐겨찾기) API")
 @RestController
-@RequestMapping("/api/my-gyms")
+@RequestMapping("/api/member-gym")
 @RequiredArgsConstructor
-public class FavoriteController {
+public class MemberGymController {
 
-    private final FavoriteService favoriteService;
+    private final MemberGymService memberGymService;
 
     @Operation(summary = "내 체육관 목록 조회", description = "사용자가 등록한 체육관 목록을 조회합니다.")
     @GetMapping
@@ -30,7 +30,7 @@ public class FavoriteController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         Long memberId = Long.parseLong(userDetails.getUsername());
-        List<FavoriteGymDto> myGyms = favoriteService.getMyGyms(memberId);
+        List<MemberGymDto> myGyms = memberGymService.getMyGyms(memberId);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_GYM_LIST_SUCCESS, myGyms));
     }
 
@@ -38,10 +38,10 @@ public class FavoriteController {
     @PostMapping
     public ResponseEntity<ResultResponse> addGymToMyList(
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody FavoriteRequestDto request
+            @RequestBody MemberGymRequestDto request
     ) {
         Long memberId = Long.parseLong(userDetails.getUsername());
-        FavoriteGymDto result = favoriteService.addGymToMyList(memberId, request);
+        MemberGymDto result = memberGymService.addGymToMyList(memberId, request);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_GYM_ADD_SUCCESS, result));
     }
 
@@ -52,7 +52,7 @@ public class FavoriteController {
             @PathVariable Long gymId
     ) {
         Long memberId = Long.parseLong(userDetails.getUsername());
-        FavoriteGymDto result = favoriteService.toggleFavorite(memberId, gymId);
+        MemberGymDto result = memberGymService.toggleFavorite(memberId, gymId);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_GYM_FAVORITE_TOGGLE_SUCCESS, result));
     }
 
@@ -63,7 +63,7 @@ public class FavoriteController {
             @PathVariable Long gymId
     ) {
         Long memberId = Long.parseLong(userDetails.getUsername());
-        favoriteService.removeGymFromMyList(memberId, gymId);
+        memberGymService.removeGymFromMyList(memberId, gymId);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_GYM_REMOVE_SUCCESS, null));
     }
 }

@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { RootState } from '@/store';
 import axiosInstance from '../../utils/axiosInstance';
 
 // 네이티브에서만 MapView 임포트

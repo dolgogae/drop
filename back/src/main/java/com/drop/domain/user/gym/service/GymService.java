@@ -5,7 +5,7 @@ import com.drop.domain.user.gym.dto.GymCreateDto;
 import com.drop.domain.user.gym.dto.GymDto;
 import com.drop.domain.user.gym.mapper.GymMapper;
 import com.drop.domain.user.gym.repository.GymRepository;
-import com.drop.domain.geocoding.service.GeocodingService;
+import com.drop.domain.user.gym.geocoding.service.GeocodingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,5 +48,24 @@ public class GymService {
         return gymRepository.findByBounds(swLat, swLng, neLat, neLng).stream()
                 .map(gymMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    private static final double DEFAULT_RADIUS_KM = 5.0;
+
+    @Transactional(readOnly = true)
+    public int countNearbyGyms(Double latGrid, Double lngGrid) {
+        if (latGrid == null || lngGrid == null) {
+            return (int) gymRepository.count();
+        }
+
+        double deltaLat = DEFAULT_RADIUS_KM / 111.0;
+        double deltaLng = DEFAULT_RADIUS_KM / (111.0 * Math.cos(Math.toRadians(latGrid)));
+
+        double swLat = latGrid - deltaLat;
+        double neLat = latGrid + deltaLat;
+        double swLng = lngGrid - deltaLng;
+        double neLng = lngGrid + deltaLng;
+
+        return gymRepository.findByBounds(swLat, swLng, neLat, neLng).size();
     }
 }

@@ -1,4 +1,4 @@
-package com.drop.domain.favorite.data;
+package com.drop.domain.membergym.data;
 
 import com.drop.domain.base.BaseEntity;
 import com.drop.domain.user.gym.data.Gym;

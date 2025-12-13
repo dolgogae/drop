@@ -1,6 +1,6 @@
-package com.drop.domain.favorite.repository;
+package com.drop.domain.membergym.repository;
 
-import com.drop.domain.favorite.data.MemberGym;
+import com.drop.domain.membergym.data.MemberGym;
 import com.drop.domain.user.gym.data.Gym;
 import com.drop.domain.user.member.data.Member;
 import org.springframework.data.jpa.repository.JpaRepository;

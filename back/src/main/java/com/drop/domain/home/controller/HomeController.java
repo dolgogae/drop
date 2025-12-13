@@ -4,6 +4,7 @@ import com.drop.domain.home.dto.HomeSummaryDto;
 import com.drop.domain.home.service.HomeService;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
+import com.drop.global.enums.LocationMode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,8 +29,8 @@ public class HomeController {
     @GetMapping("/summary")
     public ResponseEntity<ResultResponse> getHomeSummary(
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
-            @Parameter(description = "위치 모드 (current: 현재 위치, last: 마지막 위치)")
-            @RequestParam(required = false, defaultValue = "current") String locationMode,
+            @Parameter(description = "위치 모드 (CURRENT: 현재 위치, LAST: 마지막 위치)")
+            @RequestParam(required = false) String locationMode,
             @Parameter(description = "위도 (grid 단위)")
             @RequestParam(required = false) Double latGrid,
             @Parameter(description = "경도 (grid 단위)")
@@ -44,7 +45,8 @@ public class HomeController {
             }
         }
 
-        HomeSummaryDto summary = homeService.getHomeSummary(memberId, locationMode, latGrid, lngGrid);
+        LocationMode mode = LocationMode.fromValue(locationMode);
+        HomeSummaryDto summary = homeService.getHomeSummary(memberId, mode, latGrid, lngGrid);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.HOME_SUMMARY_SUCCESS, summary));
     }
 }
