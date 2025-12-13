@@ -13,7 +13,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Schema(description = "체육관 생성 DTO")
 public class GymCreateDto extends UserCreateDto {
-    // TODO: need to add gym's column
     private String name;
     private String location;
     private String phoneNumber;

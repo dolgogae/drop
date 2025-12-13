@@ -12,9 +12,12 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class GymDto extends UserDto {
 
+    private String name;
     private String location;
     private String phoneNumber;
     private String etcInfo;    // nearby any stations
+    private Double latitude;
+    private Double longitude;
     private GymUsageInfoDto usageInfoDto;
 
 

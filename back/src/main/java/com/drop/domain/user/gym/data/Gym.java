@@ -23,6 +23,9 @@ public class Gym extends UserBase {
     private String phoneNumber;
     private String etcInfo;    // nearby any stations
 
+    private Double latitude;
+    private Double longitude;
+
     @Embedded
     private UsageInfo usageInfo;
 
@@ -41,6 +44,11 @@ public class Gym extends UserBase {
                 .etcInfo(gymDto.getEtcInfo())
                 .usageInfo(UsageInfo.create(gymDto.getUsageInfoDto()))
                 .build();
+    }
+
+    public void updateCoordinates(Double latitude, Double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     @Embeddable

@@ -1,3 +1,8 @@
 spring:
   profiles:
     active: dev
+
+kakao:
+  api:
+    key: ${KAKAO_REST_API_KEY:your-kakao-rest-api-key}
+    base-url: https://dapi.kakao.com
