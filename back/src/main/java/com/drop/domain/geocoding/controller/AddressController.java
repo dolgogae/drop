@@ -1,6 +1,7 @@
-package com.drop.global.geocoding;
+package com.drop.domain.geocoding.controller;
 
-import com.drop.global.geocoding.dto.AddressValidationResponseDto;
+import com.drop.domain.geocoding.service.GeocodingService;
+import com.drop.domain.geocoding.dto.AddressValidationResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

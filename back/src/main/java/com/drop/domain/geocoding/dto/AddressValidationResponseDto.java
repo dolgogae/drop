@@ -1,4 +1,4 @@
-package com.drop.global.geocoding.dto;
+package com.drop.domain.geocoding.dto;
 
 import lombok.Builder;
 import lombok.Getter;

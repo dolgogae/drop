@@ -1,7 +1,7 @@
-package com.drop.global.geocoding;
+package com.drop.domain.geocoding.service;
 
-import com.drop.global.geocoding.dto.AddressValidationResponseDto;
-import com.drop.global.geocoding.dto.KakaoGeocodingResponseDto;
+import com.drop.domain.geocoding.dto.AddressValidationResponseDto;
+import com.drop.domain.geocoding.dto.KakaoGeocodingResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
