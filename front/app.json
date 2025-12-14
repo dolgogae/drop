@@ -2,6 +2,7 @@
   "expo": {
     "name": "drop-front",
     "slug": "drop-front",
+    "owner": "sihun",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

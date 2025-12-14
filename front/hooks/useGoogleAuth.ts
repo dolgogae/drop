@@ -20,7 +20,6 @@ export function useGoogleAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [authResult, setAuthResult] = useState<GoogleAuthResult | null>(null);
 
-  // Expo Go에서는 proxy를 통해 인증 처리
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: GOOGLE_WEB_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
