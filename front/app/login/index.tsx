@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
+import { useI18n } from '../../contexts/i18n';
 import { setTokens } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
-import { useI18n } from '../../contexts/i18n';
 import styles from './styles';
 
 export default function LoginScreen() {
@@ -29,13 +29,8 @@ export default function LoginScreen() {
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken,
         }));
-<<<<<<< HEAD
-        Alert.alert('로그인 성공!', '메인페이지로 이동합니다.');
-        router.replace('/(tabs)');
-=======
         Alert.alert(t('auth.loginSuccess'));
         router.replace('/');
->>>>>>> 0a88c40 (back)
       } else {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
       }
