@@ -4,6 +4,7 @@ import com.drop.domain.user.userbase.service.UserService;
 import com.drop.global.redis.RedisUtils;
 import com.drop.global.security.AES128Service;
 import com.drop.global.security.CustomAuthenticationEntryPoint;
+import com.drop.global.security.CustomUserDetailsService;
 import com.drop.global.security.handler.CustomAccessDeniedHandler;
 import com.drop.global.security.handler.LoginFailureHandler;
 import com.drop.global.security.handler.LoginSuccessHandler;
@@ -15,11 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -40,6 +43,7 @@ public class SecurityConfig {
     private final UserService userService;
     private final AES128Service aes128Service;
     private final RedisUtils redisUtils;
+    private final CustomUserDetailsService customUserDetailsService;
 
     private final static String[] permitAllUrl = {
             "/","/**",
@@ -53,6 +57,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
 
         http
+                .authenticationProvider(authenticationProvider())
                 .headers(header -> header.frameOptions().sameOrigin())
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors().configurationSource(corsConfigurationSource())
@@ -79,6 +84,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(customUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        provider.setHideUserNotFoundExceptions(false); // UsernameNotFoundException을 그대로 전달
+        return provider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager() {
+        // 우리가 만든 Provider만 사용하도록 명시적으로 설정
+        return new ProviderManager(authenticationProvider());
+    }
+
+    @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 //        configuration.setAllowedOrigins(List.of("*"));
@@ -99,8 +119,8 @@ public class SecurityConfig {
         @Override
         public void configure(HttpSecurity builder) {
             log.info("SecurityConfiguration.CustomFilterConfigurer.configure execute");
-            AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
-            JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager,
+            // 우리가 만든 AuthenticationManager Bean 사용
+            JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager(),
                     jwtTokenProvider, aes128Service, userService, redisUtils);
             JwtVerificationFilter jwtVerificationFilter = new JwtVerificationFilter(jwtTokenProvider, redisUtils);
 

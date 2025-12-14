@@ -46,6 +46,7 @@ const translations: Record<Language, Record<string, string>> = {
     'validation.passwordMismatch': '비밀번호가 일치하지 않습니다.',
     'validation.selectRole': '회원 유형을 선택해주세요.',
     'validation.networkError': '서버에 연결할 수 없습니다.',
+    'validation.invalidCredentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
     'validation.error': '오류가 발생했습니다.',
 
     // Role Selection
@@ -121,6 +122,7 @@ const translations: Record<Language, Record<string, string>> = {
     'validation.passwordMismatch': 'Passwords do not match.',
     'validation.selectRole': 'Please select a user type.',
     'validation.networkError': 'Unable to connect to server.',
+    'validation.invalidCredentials': 'Invalid email or password.',
     'validation.error': 'An error occurred.',
 
     // Role Selection

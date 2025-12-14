@@ -38,9 +38,13 @@ export default function LoginScreen() {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
       }
     } catch (e: any) {
-      if (e.response?.data?.message) {
-        Alert.alert(t('auth.loginFailed'), e.response.data.message);
+      if (e.response) {
+        // HTTP 에러 응답을 받은 경우 (서버가 응답함)
+        const message = e.response.data?.message || t('validation.invalidCredentials');
+        console.log(message);
+        Alert.alert(t('auth.loginFailed'), message);
       } else {
+        // 네트워크 에러 (서버 연결 실패)
         Alert.alert(t('auth.loginFailed'), t('validation.networkError'));
       }
     } finally {
