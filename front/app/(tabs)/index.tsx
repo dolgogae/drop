@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Linking,
   Platform,
@@ -25,6 +26,7 @@ interface MyGymPreview {
   name: string;
   isFavorite: boolean;
   isDeleted: boolean;
+  togglingFavorite?: boolean;
 }
 
 interface HomeSummary {
@@ -179,8 +181,8 @@ export default function HomeScreen() {
     router.push('/(tabs)/map');
   };
 
-  const handleRegister = () => {
-    router.push('/register');
+  const handleGoToMyGyms = () => {
+    router.push('/my-gyms' as any);
   };
 
   const handleGymPress = (gym: MyGymPreview) => {
@@ -192,10 +194,52 @@ export default function HomeScreen() {
     console.log('체육관 상세:', gym.gymId);
   };
 
+  // 즐겨찾기 토글
+  const handleToggleFavorite = async (gymId: number) => {
+    if (!summary) return;
+
+    // 로딩 상태 설정
+    setSummary({
+      ...summary,
+      myGymsPreview: summary.myGymsPreview.map((g) =>
+        g.gymId === gymId ? { ...g, togglingFavorite: true } : g
+      ),
+    });
+
+    try {
+      const response = await axiosInstance.patch(`/api/member-gym/${gymId}/favorite`);
+      if (response.data?.data) {
+        setSummary((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            myGymsPreview: prev.myGymsPreview.map((g) =>
+              g.gymId === gymId
+                ? { ...g, isFavorite: response.data.data.isFavorite, togglingFavorite: false }
+                : g
+            ),
+          };
+        });
+      }
+    } catch (error) {
+      console.error('즐겨찾기 토글 실패:', error);
+      // 로딩 상태 해제
+      setSummary((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          myGymsPreview: prev.myGymsPreview.map((g) =>
+            g.gymId === gymId ? { ...g, togglingFavorite: false } : g
+          ),
+        };
+      });
+    }
+  };
+
   // 내 체육관에서 제거
   const handleRemoveGym = async (gymId: number) => {
     try {
-      await axiosInstance.delete(`/member-gym/${gymId}`);
+      await axiosInstance.delete(`/api/member-gym/${gymId}`);
       // 성공 시 목록에서 제거
       if (summary) {
         setSummary({
@@ -299,8 +343,8 @@ export default function HomeScreen() {
         {/* FAB */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={handleRegister}
-          accessibilityLabel="체육관 등록"
+          onPress={handleGoToMap}
+          accessibilityLabel="지도에서 체육관 추가"
           accessibilityRole="button"
         >
           <Ionicons name="add" size={28} color="#fff" />
@@ -324,8 +368,8 @@ export default function HomeScreen() {
         {/* FAB */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={handleRegister}
-          accessibilityLabel="체육관 등록"
+          onPress={handleGoToMap}
+          accessibilityLabel="지도에서 체육관 추가"
           accessibilityRole="button"
         >
           <Ionicons name="add" size={28} color="#fff" />
@@ -364,8 +408,8 @@ export default function HomeScreen() {
         {/* 내 체육관 섹션 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>내 체육관</Text>
-          {summary?.hasMoreMyGyms && (
-            <TouchableOpacity>
+          {(summary?.hasMoreMyGyms || (summary?.myGymsPreview && summary.myGymsPreview.length > 0)) && (
+            <TouchableOpacity onPress={handleGoToMyGyms}>
               <Text style={styles.moreButton}>더보기</Text>
             </TouchableOpacity>
           )}
@@ -376,9 +420,9 @@ export default function HomeScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={48} color="#A3B18A" />
             <Text style={styles.emptyText}>아직 등록된 체육관이 없어요</Text>
-            <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleRegister}>
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.emptyRegisterButtonText}>체육관 등록하기</Text>
+            <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleGoToMap}>
+              <Ionicons name="map-outline" size={20} color="#fff" />
+              <Text style={styles.emptyRegisterButtonText}>지도에서 추가하기</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -426,8 +470,26 @@ export default function HomeScreen() {
                   >
                     {gym.isDeleted ? '없어진 체육관' : gym.name}
                   </Text>
-                  {!gym.isDeleted && gym.isFavorite && (
-                    <Ionicons name="star" size={16} color="#FFD700" style={styles.favoriteIcon} />
+                  {!gym.isDeleted && (
+                    <TouchableOpacity
+                      style={styles.favoriteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleToggleFavorite(gym.gymId);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      disabled={gym.togglingFavorite}
+                    >
+                      {gym.togglingFavorite ? (
+                        <ActivityIndicator size="small" color="#FFD700" />
+                      ) : (
+                        <Ionicons
+                          name={gym.isFavorite ? 'star' : 'star-outline'}
+                          size={18}
+                          color={gym.isFavorite ? '#FFD700' : '#ccc'}
+                        />
+                      )}
+                    </TouchableOpacity>
                   )}
                 </View>
               </TouchableOpacity>
@@ -436,11 +498,11 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* FAB - 등록 버튼 */}
+      {/* FAB - 지도에서 체육관 추가 */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={handleRegister}
-        accessibilityLabel="체육관 등록"
+        onPress={handleGoToMap}
+        accessibilityLabel="지도에서 체육관 추가"
         accessibilityRole="button"
       >
         <Ionicons name="add" size={28} color="#fff" />
@@ -621,8 +683,9 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
-  favoriteIcon: {
-    marginLeft: 6,
+  favoriteButton: {
+    marginLeft: 8,
+    padding: 4,
   },
   deletedIcon: {
     marginRight: 4,
