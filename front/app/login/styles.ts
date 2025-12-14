@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1B4332', // 다크 그린
+    color: '#1B4332',
     marginBottom: 32,
   },
   input: {
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     height: 48,
-    backgroundColor: '#1B4332', // 다크 그린
+    backgroundColor: '#1B4332',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -50,6 +50,78 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textDecorationLine: 'underline',
   },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#666',
+    fontSize: 14,
+  },
+  socialButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
+  },
+  googleIcon: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4285F4',
+    marginRight: 10,
+  },
+  socialButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  checkboxContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#1B4332',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: '#1B4332',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    color: '#333',
+  },
 });
 
-export default styles; 
+export default styles;

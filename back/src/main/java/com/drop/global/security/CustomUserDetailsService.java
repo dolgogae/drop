@@ -2,8 +2,6 @@ package com.drop.global.security;
 
 import com.drop.domain.user.userbase.data.UserBase;
 import com.drop.domain.user.userbase.repository.UserJpaRepository;
-import com.drop.global.code.error.ErrorCode;
-import com.drop.global.code.error.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,9 +19,15 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        UserDetails userDetails = userJpaRepository.findByEmail(email)
-                .map(this::createUserDetails)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_EXIST));
+        log.info("loadUserByUsername called with email: {}", email);
+
+        UserBase user = userJpaRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.warn("User not found with email: {}", email);
+                    return new UsernameNotFoundException("존재하지 않는 아이디입니다.");
+                });
+
+        UserDetails userDetails = createUserDetails(user);
         log.info(userDetails.toString());
         return userDetails;
     }
