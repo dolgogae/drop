@@ -9,8 +9,10 @@ import com.drop.domain.user.member.service.MemberService;
 import com.drop.domain.user.trainer.dto.TrainerCreateDto;
 import com.drop.domain.user.trainer.dto.TrainerDto;
 import com.drop.domain.user.trainer.service.TrainerService;
+import com.drop.domain.user.userbase.dto.GoogleAuthDto;
 import com.drop.domain.user.userbase.dto.TokenDto;
 import com.drop.domain.user.userbase.dto.UserCreateDto;
+import com.drop.domain.user.userbase.service.GoogleAuthService;
 import com.drop.domain.user.userbase.service.UserDtoConverter;
 import com.drop.domain.user.userbase.service.UserService;
 import com.drop.global.code.result.ResultCode;
@@ -38,6 +40,7 @@ public class AuthController {
     private final TrainerService trainerService;
     private final MemberService memberService;
     private final GymService gymService;
+    private final GoogleAuthService googleAuthService;
 
     private final PasswordEncoder passwordEncoder;
     private final UserDtoConverter userDtoConverter;
@@ -104,6 +107,18 @@ public class AuthController {
                 .refreshToken(refreshToken)
                 .build();
 
+        ResultResponse result = ResultResponse.of(ResultCode.LOGIN_SUCCESS, tokenDto);
+        return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
+    }
+
+    @Operation(summary = "Google 소셜 로그인", description = "Google ID Token으로 로그인/회원가입")
+    @PostMapping("/oauth/google")
+    public ResponseEntity<ResultResponse> googleAuth(
+            @RequestBody @Valid GoogleAuthDto googleAuthDto
+    ){
+        log.info("Google OAuth request received");
+
+        TokenDto tokenDto = googleAuthService.authenticateWithGoogle(googleAuthDto.getIdToken());
         ResultResponse result = ResultResponse.of(ResultCode.LOGIN_SUCCESS, tokenDto);
         return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
     }

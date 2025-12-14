@@ -36,6 +36,10 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.registering': '가입 중...',
     'auth.completeRegister': '회원가입 완료',
     'auth.loggingIn': '로그인 중...',
+    'auth.or': '또는',
+    'auth.googleLogin': 'Google로 로그인',
+    'auth.appleLogin': 'Apple로 로그인',
+    'auth.kakaoLogin': '카카오로 로그인',
 
     // Validation
     'validation.fillAll': '모든 항목을 입력해주세요.',
@@ -107,6 +111,10 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.registering': 'Signing up...',
     'auth.completeRegister': 'Complete Registration',
     'auth.loggingIn': 'Logging in...',
+    'auth.or': 'or',
+    'auth.googleLogin': 'Sign in with Google',
+    'auth.appleLogin': 'Sign in with Apple',
+    'auth.kakaoLogin': 'Sign in with Kakao',
 
     // Validation
     'validation.fillAll': 'Please fill in all fields.',

@@ -16,7 +16,6 @@ import javax.persistence.Entity;
 @DiscriminatorValue("MEMBER")
 public class Member extends UserBase {
 
-    // TODO: justify columns
     private String exampleColumn;
 
     public static Member create(MemberCreateDto memberCreateDto){

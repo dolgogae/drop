@@ -6,12 +6,15 @@ import { useI18n } from '../../contexts/i18n';
 import { setTokens } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
 import { useI18n } from '../../contexts/i18n';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import styles from './styles';
 
 export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { t } = useI18n();
+  const { signInWithGoogle, isLoading: googleLoading, isReady: googleReady } = useGoogleAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,6 +49,36 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    const result = await signInWithGoogle();
+
+    if (result.success && result.idToken) {
+      try {
+        const response = await axiosInstance.post('/auth/oauth/google', {
+          idToken: result.idToken,
+          accessToken: result.accessToken,
+        });
+
+        const data = response.data;
+        if (response.status === 200 && data.data?.accessToken) {
+          dispatch(setTokens({
+            accessToken: data.data.accessToken,
+            refreshToken: data.data.refreshToken,
+          }));
+          Alert.alert(t('auth.loginSuccess'));
+          router.replace('/');
+        } else {
+          Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
+        }
+      } catch (e: any) {
+        const message = e.response?.data?.message || t('validation.error');
+        Alert.alert(t('auth.loginFailed'), message);
+      }
+    } else if (result.error) {
+      Alert.alert(t('auth.loginFailed'), result.error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('auth.login')}</Text>
@@ -71,6 +104,24 @@ export default function LoginScreen() {
           {loading ? t('auth.loggingIn') : t('auth.login')}
         </Text>
       </TouchableOpacity>
+
+      <View style={styles.dividerContainer}>
+        <View style={styles.divider} />
+        <Text style={styles.dividerText}>{t('auth.or')}</Text>
+        <View style={styles.divider} />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.socialButton, styles.googleButton]}
+        onPress={handleGoogleLogin}
+        disabled={googleLoading || !googleReady}
+      >
+        <Text style={styles.googleIcon}>G</Text>
+        <Text style={styles.socialButtonText}>
+          {googleLoading ? t('auth.loggingIn') : t('auth.googleLogin')}
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity onPress={() => router.push('/register')} style={styles.linkBtn}>
         <Text style={styles.link}>{t('auth.goToRegister')}</Text>
       </TouchableOpacity>
