@@ -40,6 +40,8 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.googleLogin': 'Google로 로그인',
     'auth.appleLogin': 'Apple로 로그인',
     'auth.kakaoLogin': '카카오로 로그인',
+    'auth.autoLogin': '자동 로그인',
+    'auth.rememberEmail': '아이디 기억하기',
 
     // Validation
     'validation.fillAll': '모든 항목을 입력해주세요.',
@@ -48,6 +50,8 @@ const translations: Record<Language, Record<string, string>> = {
     'validation.networkError': '서버에 연결할 수 없습니다.',
     'validation.invalidCredentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
     'validation.error': '오류가 발생했습니다.',
+    'validation.invalidEmail': '올바른 이메일 형식이 아닙니다.',
+    'validation.invalidPassword': '비밀번호는 영어 소문자, 숫자, 특수문자를 각각 1개 이상 포함하여 8자 이상이어야 합니다.',
 
     // Role Selection
     'role.title': '회원 유형 선택',
@@ -116,6 +120,8 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.googleLogin': 'Sign in with Google',
     'auth.appleLogin': 'Sign in with Apple',
     'auth.kakaoLogin': 'Sign in with Kakao',
+    'auth.autoLogin': 'Auto Login',
+    'auth.rememberEmail': 'Remember Email',
 
     // Validation
     'validation.fillAll': 'Please fill in all fields.',
@@ -124,6 +130,8 @@ const translations: Record<Language, Record<string, string>> = {
     'validation.networkError': 'Unable to connect to server.',
     'validation.invalidCredentials': 'Invalid email or password.',
     'validation.error': 'An error occurred.',
+    'validation.invalidEmail': 'Please enter a valid email address.',
+    'validation.invalidPassword': 'Password must be at least 8 characters with lowercase, number, and special character.',
 
     // Role Selection
     'role.title': 'Select User Type',

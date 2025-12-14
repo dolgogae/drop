@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Alert,
   Text,
@@ -13,6 +13,20 @@ import styles from './styles';
 
 type UserRole = 'MEMBER' | 'TRAINER' | 'GYM';
 
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validatePassword = (password: string): boolean => {
+  // 영어 소문자, 숫자, 특수문자 각각 1개 이상 포함, 8자 이상
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  const hasMinLength = password.length >= 8;
+  return hasLowercase && hasNumber && hasSpecialChar && hasMinLength;
+};
+
 export default function RegisterScreen() {
   const router = useRouter();
   const { t } = useI18n();
@@ -21,6 +35,19 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  // 실시간 유효성 검사 상태
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [passwordConfirmTouched, setPasswordConfirmTouched] = useState(false);
+
+  const isEmailValid = useMemo(() => validateEmail(email), [email]);
+  const isPasswordValid = useMemo(() => validatePassword(password), [password]);
+  const isPasswordMatch = useMemo(() => password === passwordConfirm, [password, passwordConfirm]);
+
+  const showEmailError = emailTouched && email.length > 0 && !isEmailValid;
+  const showPasswordError = passwordTouched && password.length > 0 && !isPasswordValid;
+  const showPasswordMismatch = passwordConfirmTouched && passwordConfirm.length > 0 && !isPasswordMatch;
 
   const roles: { key: UserRole; labelKey: string; descKey: string }[] = [
     { key: 'MEMBER', labelKey: 'role.member', descKey: 'role.memberDesc' },
@@ -33,7 +60,15 @@ export default function RegisterScreen() {
       Alert.alert(t('validation.fillAll'));
       return;
     }
-    if (password !== passwordConfirm) {
+    if (!isEmailValid) {
+      Alert.alert(t('validation.invalidEmail'));
+      return;
+    }
+    if (!isPasswordValid) {
+      Alert.alert(t('validation.invalidPassword'));
+      return;
+    }
+    if (!isPasswordMatch) {
       Alert.alert(t('validation.passwordMismatch'));
       return;
     }
@@ -110,30 +145,42 @@ export default function RegisterScreen() {
           autoCapitalize="none"
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, showEmailError && styles.inputError]}
           placeholder={t('auth.email')}
           placeholderTextColor="#A3B18A"
           value={email}
           onChangeText={setEmail}
+          onBlur={() => setEmailTouched(true)}
           autoCapitalize="none"
           keyboardType="email-address"
         />
+        {showEmailError && (
+          <Text style={styles.errorText}>{t('validation.invalidEmail')}</Text>
+        )}
         <TextInput
-          style={styles.input}
+          style={[styles.input, showPasswordError && styles.inputError]}
           placeholder={t('auth.password')}
           placeholderTextColor="#A3B18A"
           value={password}
           onChangeText={setPassword}
+          onBlur={() => setPasswordTouched(true)}
           secureTextEntry
         />
+        {showPasswordError && (
+          <Text style={styles.errorText}>{t('validation.invalidPassword')}</Text>
+        )}
         <TextInput
-          style={styles.input}
+          style={[styles.input, showPasswordMismatch && styles.inputError]}
           placeholder={t('auth.passwordConfirm')}
           placeholderTextColor="#A3B18A"
           value={passwordConfirm}
           onChangeText={setPasswordConfirm}
+          onBlur={() => setPasswordConfirmTouched(true)}
           secureTextEntry
         />
+        {showPasswordMismatch && (
+          <Text style={styles.errorText}>{t('validation.passwordMismatch')}</Text>
+        )}
 
         <TouchableOpacity style={styles.button} onPress={handleNext}>
           <Text style={styles.buttonText}>{t('common.next')}</Text>

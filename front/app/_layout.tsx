@@ -2,25 +2,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Provider, useSelector } from 'react-redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
 import LoadingSpinner from '../components/LoadingSpinner';
 import LanguageToggle from '../components/LanguageToggle';
 import { I18nProvider } from '../contexts/i18n';
-import { RootState, store } from '../store';
+import { RootState, store, setTokens } from '../store';
+
+const AUTH_TOKENS_KEY = 'auth_tokens';
 
 function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
   useEffect(() => {
     const checkLogin = async () => {
-      await AsyncStorage.getItem('isLoggedIn');
+      try {
+        const savedTokens = await AsyncStorage.getItem(AUTH_TOKENS_KEY);
+        if (savedTokens) {
+          const { accessToken, refreshToken } = JSON.parse(savedTokens);
+          if (accessToken && refreshToken) {
+            dispatch(setTokens({ accessToken, refreshToken }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore tokens:', error);
+      }
       setIsLoading(false);
     };
     checkLogin();
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (isLoading) return;

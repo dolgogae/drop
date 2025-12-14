@@ -169,6 +169,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  inputError: {
+    borderColor: '#D32F2F',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 13,
+    marginTop: -12,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 4,
+  },
 });
 
 export default styles;
