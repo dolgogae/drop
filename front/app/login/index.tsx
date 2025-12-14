@@ -3,10 +3,9 @@ import React, { useState } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useI18n } from '../../contexts/i18n';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { setTokens } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
-import { useI18n } from '../../contexts/i18n';
-import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import styles from './styles';
 
 export default function LoginScreen() {

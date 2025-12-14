@@ -7,7 +7,6 @@ import lombok.experimental.SuperBuilder;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Data
@@ -32,7 +31,6 @@ public class UserCreateDto {
     @Schema(description = "사용자 비밀번호", example = "1234!@#")
     protected String password;
 
-    @NotNull
     @Schema(description = "사용자 권한", example = "MEMBER")
     protected UserRole role;
 }
