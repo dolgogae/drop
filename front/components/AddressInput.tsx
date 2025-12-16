@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -54,7 +54,7 @@ export default function AddressInput({
 
       setIsValidating(true);
       try {
-        const response = await axiosInstance.get('/api/address/validate', {
+        const response = await axiosInstance.get('/address/validate', {
           params: { query: debouncedValue },
         });
         const result = response.data as AddressValidationResult;

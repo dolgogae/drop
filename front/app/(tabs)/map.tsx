@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Platform,
@@ -10,8 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
 
 // 네이티브에서만 MapView 임포트
@@ -37,6 +37,7 @@ interface Gym {
   phoneNumber: string;
   latitude: number;
   longitude: number;
+  isMyGym?: boolean;
 }
 
 interface Cluster {
@@ -51,11 +52,13 @@ const { width, height } = Dimensions.get('window');
 const CLUSTER_DISTANCE = 0.01; // 클러스터링 거리 (약 1km)
 
 export default function MapScreen() {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<typeof MapView>(null);
   const [gyms, setGyms] = useState<Gym[]>([]);
+  const [myGymIds, setMyGymIds] = useState<Set<number>>(new Set());
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [loading, setLoading] = useState(true);
+  const [addingGymId, setAddingGymId] = useState<number | null>(null);
   const [region, setRegion] = useState<Region>({
     latitude: 37.5665,
     longitude: 126.978,
@@ -63,10 +66,9 @@ export default function MapScreen() {
     longitudeDelta: 0.1,
   });
 
-  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-
   useEffect(() => {
     fetchGyms();
+    fetchMyGyms();
   }, []);
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function MapScreen() {
   const fetchGyms = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/gyms/map');
+      const response = await axiosInstance.get('/gyms/map');
       if (response.data?.data) {
         setGyms(response.data.data);
       }
@@ -86,6 +88,50 @@ export default function MapScreen() {
       console.error('체육관 목록 조회 실패:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMyGyms = async () => {
+    try {
+      const response = await axiosInstance.get('/member-gym');
+      if (response.data?.data) {
+        const ids = new Set<number>(response.data.data.map((g: any) => g.gymId));
+        setMyGymIds(ids);
+      }
+    } catch (error) {
+      console.error('내 체육관 목록 조회 실패:', error);
+    }
+  };
+
+  const handleAddToMyGyms = async (gymId: number) => {
+    try {
+      setAddingGymId(gymId);
+      await axiosInstance.post('/member-gym', { gymId, isFavorite: false });
+      setMyGymIds((prev) => new Set(prev).add(gymId));
+      Alert.alert('성공', '내 체육관에 추가되었습니다.');
+    } catch (error: any) {
+      const message = error.response?.data?.message || '추가에 실패했습니다.';
+      Alert.alert('오류', message);
+    } finally {
+      setAddingGymId(null);
+    }
+  };
+
+  const handleRemoveFromMyGyms = async (gymId: number) => {
+    try {
+      setAddingGymId(gymId);
+      await axiosInstance.delete(`/member-gym/${gymId}`);
+      setMyGymIds((prev) => {
+        const next = new Set(prev);
+        next.delete(gymId);
+        return next;
+      });
+      Alert.alert('성공', '내 체육관에서 제거되었습니다.');
+    } catch (error: any) {
+      const message = error.response?.data?.message || '제거에 실패했습니다.';
+      Alert.alert('오류', message);
+    } finally {
+      setAddingGymId(null);
     }
   };
 
@@ -164,15 +210,47 @@ export default function MapScreen() {
     setSelectedCluster(null);
   };
 
-  const renderGymItem = ({ item }: { item: Gym }) => (
-    <TouchableOpacity style={styles.gymItem}>
-      <Text style={styles.gymName}>{item.name}</Text>
-      <Text style={styles.gymLocation}>{item.location}</Text>
-      {item.phoneNumber && (
-        <Text style={styles.gymPhone}>{item.phoneNumber}</Text>
-      )}
-    </TouchableOpacity>
-  );
+  const renderGymItem = ({ item }: { item: Gym }) => {
+    const isMyGym = myGymIds.has(item.id);
+    const isProcessing = addingGymId === item.id;
+
+    return (
+      <View style={styles.gymItem}>
+        <View style={styles.gymInfo}>
+          <Text style={styles.gymName}>{item.name}</Text>
+          <Text style={styles.gymLocation}>{item.location}</Text>
+          {item.phoneNumber && (
+            <Text style={styles.gymPhone}>{item.phoneNumber}</Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            isMyGym && styles.addButtonActive,
+          ]}
+          onPress={() =>
+            isMyGym ? handleRemoveFromMyGyms(item.id) : handleAddToMyGyms(item.id)
+          }
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator size="small" color={isMyGym ? '#588157' : '#fff'} />
+          ) : (
+            <>
+              <Ionicons
+                name={isMyGym ? 'checkmark' : 'add'}
+                size={18}
+                color={isMyGym ? '#588157' : '#fff'}
+              />
+              <Text style={[styles.addButtonText, isMyGym && styles.addButtonTextActive]}>
+                {isMyGym ? '추가됨' : '추가'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   // 웹에서는 대체 UI 표시
   if (Platform.OS === 'web') {
@@ -360,9 +438,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   gymItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  gymInfo: {
+    flex: 1,
   },
   gymName: {
     fontSize: 16,
@@ -378,6 +461,31 @@ const styles = StyleSheet.create({
   gymPhone: {
     fontSize: 12,
     color: '#A3B18A',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#588157',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 12,
+    minWidth: 70,
+    justifyContent: 'center',
+  },
+  addButtonActive: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#588157',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  addButtonTextActive: {
+    color: '#588157',
   },
   webContainer: {
     flex: 1,

@@ -1,7 +1,7 @@
 package com.drop.domain.geocoding.controller;
 
-import com.drop.domain.geocoding.service.GeocodingService;
 import com.drop.domain.geocoding.dto.AddressValidationResponseDto;
+import com.drop.domain.geocoding.service.GeocodingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Address", description = "주소 검증 API")
 @RestController
-@RequestMapping("/api/address")
+@RequestMapping("/address")
 @RequiredArgsConstructor
 public class AddressController {
 

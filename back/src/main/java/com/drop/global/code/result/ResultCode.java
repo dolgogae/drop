@@ -15,7 +15,16 @@ public enum ResultCode {
     GET_MY_INFO_SUCCESS(200, "M005", "내 정보 조회 완료"),
 
     // Gym
-    GYM_LIST_SUCCESS(200, "G001", "체육관 목록 조회 성공");
+    GYM_LIST_SUCCESS(200, "G001", "체육관 목록 조회 성공"),
+
+    // Home
+    HOME_SUMMARY_SUCCESS(200, "H001", "홈 화면 정보 조회 성공"),
+
+    // My Gym (Favorite)
+    MY_GYM_LIST_SUCCESS(200, "F001", "내 체육관 목록 조회 성공"),
+    MY_GYM_ADD_SUCCESS(200, "F002", "내 체육관에 추가 성공"),
+    MY_GYM_FAVORITE_TOGGLE_SUCCESS(200, "F003", "즐겨찾기 상태 변경 성공"),
+    MY_GYM_REMOVE_SUCCESS(200, "F004", "내 체육관에서 제거 성공");
 
     private int status;
     private final String code;
