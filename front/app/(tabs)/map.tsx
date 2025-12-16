@@ -93,7 +93,7 @@ export default function MapScreen() {
 
   const fetchMyGyms = async () => {
     try {
-      const response = await axiosInstance.get('/api/member-gym');
+      const response = await axiosInstance.get('/member-gym');
       if (response.data?.data) {
         const ids = new Set<number>(response.data.data.map((g: any) => g.gymId));
         setMyGymIds(ids);
@@ -106,7 +106,7 @@ export default function MapScreen() {
   const handleAddToMyGyms = async (gymId: number) => {
     try {
       setAddingGymId(gymId);
-      await axiosInstance.post('/api/member-gym', { gymId, isFavorite: false });
+      await axiosInstance.post('/member-gym', { gymId, isFavorite: false });
       setMyGymIds((prev) => new Set(prev).add(gymId));
       Alert.alert('성공', '내 체육관에 추가되었습니다.');
     } catch (error: any) {
@@ -120,7 +120,7 @@ export default function MapScreen() {
   const handleRemoveFromMyGyms = async (gymId: number) => {
     try {
       setAddingGymId(gymId);
-      await axiosInstance.delete(`/api/member-gym/${gymId}`);
+      await axiosInstance.delete(`/member-gym/${gymId}`);
       setMyGymIds((prev) => {
         const next = new Set(prev);
         next.delete(gymId);

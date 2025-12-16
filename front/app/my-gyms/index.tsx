@@ -29,7 +29,7 @@ export default function MyGymsScreen() {
 
   const fetchMyGyms = useCallback(async () => {
     try {
-      const response = await axiosInstance.get('/api/member-gym');
+      const response = await axiosInstance.get('/member-gym');
       if (response.data?.data) {
         setGyms(response.data.data);
       }
