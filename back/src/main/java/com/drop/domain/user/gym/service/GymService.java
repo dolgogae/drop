@@ -1,11 +1,11 @@
 package com.drop.domain.user.gym.service;
 
+import com.drop.domain.geocoding.service.GeocodingService;
 import com.drop.domain.user.gym.data.Gym;
 import com.drop.domain.user.gym.dto.GymCreateDto;
 import com.drop.domain.user.gym.dto.GymDto;
 import com.drop.domain.user.gym.mapper.GymMapper;
 import com.drop.domain.user.gym.repository.GymRepository;
-import com.drop.domain.user.gym.geocoding.service.GeocodingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

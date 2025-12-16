@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Provider, useSelector, useDispatch } from 'react-redux';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import LanguageToggle from '../components/LanguageToggle';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { I18nProvider } from '../contexts/i18n';
-import { RootState, store, setTokens } from '../store';
+import { RootState, setTokens, store } from '../store';
 
 const AUTH_TOKENS_KEY = 'auth_tokens';
 
@@ -39,9 +39,7 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
-    const inTabsGroup = segments[0] === '(tabs)';
 
-    // 토큰이 없으면 /login, /register만 허용
     if (!accessToken) {
       if (!inAuthGroup) {
         router.replace('/login');
@@ -49,7 +47,6 @@ function RootLayoutNav() {
       return;
     }
 
-    // 토큰이 있으면 /login, /register 접근 시 탭 홈으로 리다이렉트
     if (accessToken) {
       if (inAuthGroup) {
         router.replace('/(tabs)');

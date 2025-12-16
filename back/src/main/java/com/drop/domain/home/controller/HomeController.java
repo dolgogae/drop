@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Home", description = "홈 화면 API")
 @RestController
-@RequestMapping("/api/home")
+@RequestMapping("/home")
 @RequiredArgsConstructor
 public class HomeController {
 

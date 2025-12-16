@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,9 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
 import axiosInstance from '../../utils/axiosInstance';
 
 // 네이티브에서만 MapView 임포트
@@ -68,8 +66,6 @@ export default function MapScreen() {
     longitudeDelta: 0.1,
   });
 
-  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-
   useEffect(() => {
     fetchGyms();
     fetchMyGyms();
@@ -84,7 +80,7 @@ export default function MapScreen() {
   const fetchGyms = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/gyms/map');
+      const response = await axiosInstance.get('/gyms/map');
       if (response.data?.data) {
         setGyms(response.data.data);
       }

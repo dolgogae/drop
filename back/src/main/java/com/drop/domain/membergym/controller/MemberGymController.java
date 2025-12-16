@@ -18,7 +18,7 @@ import java.util.List;
 
 @Tag(name = "MemberGym", description = "내 체육관 (즐겨찾기) API")
 @RestController
-@RequestMapping("/api/member-gym")
+@RequestMapping("/member-gym")
 @RequiredArgsConstructor
 public class MemberGymController {
 

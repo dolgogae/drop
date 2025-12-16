@@ -1,7 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
+  AppState,
+  AppStateStatus,
   Linking,
   Platform,
   SafeAreaView,
@@ -10,16 +14,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-  AppState,
-  AppStateStatus,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
-import axiosInstance from '../../utils/axiosInstance';
 import { HomeState, LocationMode, LocationModeText } from '../../constants/enums';
-
-const { width } = Dimensions.get('window');
+import axiosInstance from '../../utils/axiosInstance';
 
 interface MyGymPreview {
   gymId: number;
@@ -36,7 +33,6 @@ interface HomeSummary {
   hasMoreMyGyms: boolean;
 }
 
-// 위치를 그리드로 스냅 (프라이버시 보호 - 약 500m 단위)
 const snapToGrid = (value: number, gridSize: number = 0.005): number => {
   return Math.round(value / gridSize) * gridSize;
 };
@@ -207,7 +203,7 @@ export default function HomeScreen() {
     });
 
     try {
-      const response = await axiosInstance.patch(`/api/member-gym/${gymId}/favorite`);
+      const response = await axiosInstance.patch(`/member-gym/${gymId}/favorite`);
       if (response.data?.data) {
         setSummary((prev) => {
           if (!prev) return prev;
@@ -239,7 +235,7 @@ export default function HomeScreen() {
   // 내 체육관에서 제거
   const handleRemoveGym = async (gymId: number) => {
     try {
-      await axiosInstance.delete(`/api/member-gym/${gymId}`);
+      await axiosInstance.delete(`/member-gym/${gymId}`);
       // 성공 시 목록에서 제거
       if (summary) {
         setSummary({

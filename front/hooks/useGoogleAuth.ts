@@ -21,7 +21,7 @@ export function useGoogleAuth() {
   const [authResult, setAuthResult] = useState<GoogleAuthResult | null>(null);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: GOOGLE_WEB_CLIENT_ID,
+    clientId: GOOGLE_WEB_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
     androidClientId: GOOGLE_ANDROID_CLIENT_ID,
     webClientId: GOOGLE_WEB_CLIENT_ID,

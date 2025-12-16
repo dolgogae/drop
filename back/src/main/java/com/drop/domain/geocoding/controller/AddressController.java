@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Address", description = "주소 검증 API")
 @RestController
-@RequestMapping("/api/address")
+@RequestMapping("/address")
 @RequiredArgsConstructor
 public class AddressController {
 
