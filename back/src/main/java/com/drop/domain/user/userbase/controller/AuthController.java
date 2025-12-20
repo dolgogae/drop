@@ -6,9 +6,6 @@ import com.drop.domain.user.gym.service.GymService;
 import com.drop.domain.user.member.dto.MemberCreateDto;
 import com.drop.domain.user.member.dto.MemberDto;
 import com.drop.domain.user.member.service.MemberService;
-import com.drop.domain.user.trainer.dto.TrainerCreateDto;
-import com.drop.domain.user.trainer.dto.TrainerDto;
-import com.drop.domain.user.trainer.service.TrainerService;
 import com.drop.domain.user.userbase.dto.GoogleAuthDto;
 import com.drop.domain.user.userbase.dto.TokenDto;
 import com.drop.domain.user.userbase.dto.UserCreateDto;
@@ -37,7 +34,6 @@ import javax.validation.constraints.NotBlank;
 @Tag(name = "Auth", description = "인증 API")
 public class AuthController {
     private final UserService userService;
-    private final TrainerService trainerService;
     private final MemberService memberService;
     private final GymService gymService;
     private final GoogleAuthService googleAuthService;
@@ -66,19 +62,6 @@ public class AuthController {
 
         MemberDto savedMember = memberService.createMember(memberCreateDto);
         ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedMember);
-        return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
-    }
-
-    @Operation(summary = "트레이너(Trainer) 가입", description = "트레이너 전용 회원가입")
-    @PostMapping("/sign-up/trainer")
-    public ResponseEntity<ResultResponse> signUpTrainer(
-            @RequestBody @Valid TrainerCreateDto trainerCreateDto
-    ){
-        trainerCreateDto.setPassword(passwordEncoder.encode(trainerCreateDto.getPassword()));
-        trainerCreateDto.setRole(UserRole.TRAINER);
-
-        TrainerDto savedTrainer = trainerService.creatTrainer(trainerCreateDto);
-        ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedTrainer);
         return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
     }
 

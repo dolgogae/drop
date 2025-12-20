@@ -11,7 +11,7 @@ import {
 import { useI18n } from '../../contexts/i18n';
 import styles from './styles';
 
-type UserRole = 'MEMBER' | 'TRAINER' | 'GYM';
+type UserRole = 'MEMBER' | 'GYM';
 
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,7 +51,6 @@ export default function RegisterScreen() {
 
   const roles: { key: UserRole; labelKey: string; descKey: string }[] = [
     { key: 'MEMBER', labelKey: 'role.member', descKey: 'role.memberDesc' },
-    { key: 'TRAINER', labelKey: 'role.trainer', descKey: 'role.trainerDesc' },
     { key: 'GYM', labelKey: 'role.gym', descKey: 'role.gymDesc' },
   ];
 
@@ -83,12 +82,6 @@ export default function RegisterScreen() {
       case 'MEMBER':
         router.push({
           pathname: '/register/member',
-          params: baseInfo,
-        });
-        break;
-      case 'TRAINER':
-        router.push({
-          pathname: '/register/trainer',
           params: baseInfo,
         });
         break;

@@ -57,8 +57,6 @@ const translations: Record<Language, Record<string, string>> = {
     'role.title': '회원 유형 선택',
     'role.member': '일반 회원',
     'role.memberDesc': '트레이닝을 받고 싶은 회원',
-    'role.trainer': '트레이너',
-    'role.trainerDesc': '회원을 가르치는 트레이너',
     'role.gym': '체육관',
     'role.gymDesc': '체육관 운영자',
 
@@ -69,13 +67,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Member
     'member.title': '일반 회원 가입',
     'member.additionalInfo': '추가 정보',
-
-    // Trainer
-    'trainer.title': '트레이너 가입',
-    'trainer.info': '트레이너 정보',
-    'trainer.shortIntro': '짧은 소개',
-    'trainer.longIntro': '상세 소개',
-    'trainer.shortIntroRequired': '짧은 소개를 입력해주세요.',
 
     // Gym
     'gym.title': '체육관 가입',
@@ -137,8 +128,6 @@ const translations: Record<Language, Record<string, string>> = {
     'role.title': 'Select User Type',
     'role.member': 'Member',
     'role.memberDesc': 'Looking for training',
-    'role.trainer': 'Trainer',
-    'role.trainerDesc': 'Personal trainer',
     'role.gym': 'Gym',
     'role.gymDesc': 'Gym operator',
 
@@ -149,13 +138,6 @@ const translations: Record<Language, Record<string, string>> = {
     // Member
     'member.title': 'Member Registration',
     'member.additionalInfo': 'Additional Information',
-
-    // Trainer
-    'trainer.title': 'Trainer Registration',
-    'trainer.info': 'Trainer Information',
-    'trainer.shortIntro': 'Short Introduction',
-    'trainer.longIntro': 'Detailed Introduction',
-    'trainer.shortIntroRequired': 'Please enter a short introduction.',
 
     // Gym
     'gym.title': 'Gym Registration',
