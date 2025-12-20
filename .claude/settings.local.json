@@ -10,7 +10,9 @@
       "Bash(GIT_EDITOR=true git rebase:*)",
       "Bash(cat:*)",
       "Bash(GIT_EDITOR=: git rebase:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git -C /Users/sihun/dev/project/drop ls-files:*)",
+      "Bash(git rm:*)"
     ]
   }
 }
