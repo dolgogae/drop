@@ -45,3 +45,7 @@ logging.level:
 jwt:
   access-token-expiration-millis: 360000
   refresh-token-expiration-millis: 259200000
+
+kakao:
+  api:
+    base-url: https://dapi.kakao.com

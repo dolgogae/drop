@@ -113,10 +113,11 @@ public class MemberGymService {
 
     private MemberGymDto toMemberGymDto(MemberGym memberGym) {
         Gym gym = memberGym.getGym();
+        String location = gym.getAddress() != null ? gym.getAddress().getAddressLine1() : null;
         return MemberGymDto.builder()
                 .gymId(gym.getId())
                 .name(gym.getName())
-                .location(gym.getLocation())
+                .location(location)
                 .isFavorite(memberGym.getIsFavorite())
                 .build();
     }

@@ -1,8 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { clearTokens } from '../../store';
+
+const AUTH_TOKENS_KEY = 'auth_tokens';
+const AUTO_LOGIN_KEY = 'auto_login';
 
 export default function MyPageScreen() {
   const dispatch = useDispatch();
@@ -17,7 +21,8 @@ export default function MyPageScreen() {
         {
           text: '로그아웃',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
+            await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, AUTO_LOGIN_KEY]);
             dispatch(clearTokens());
             router.replace('/login');
           },

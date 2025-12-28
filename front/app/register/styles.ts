@@ -181,6 +181,49 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 4,
   },
+  addressButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: 48,
+    borderColor: '#588157',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: '#F8F9FA',
+    gap: 8,
+  },
+  addressButtonText: {
+    color: '#588157',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectedAddressContainer: {
+    width: '100%',
+    padding: 16,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#588157',
+  },
+  postalCode: {
+    fontSize: 14,
+    color: '#588157',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  addressLine: {
+    fontSize: 15,
+    color: '#344E41',
+    lineHeight: 22,
+  },
+  buildingName: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+  },
 });
 
 export default styles;
