@@ -18,11 +18,6 @@ public class GeocodingService {
 
     public record Coordinates(Double latitude, Double longitude) {}
 
-    /**
-     * 주소를 위도/경도로 변환합니다.
-     * @param address 주소 문자열
-     * @return 위도/경도 좌표 (변환 실패 시 빈 Optional)
-     */
     public Optional<Coordinates> getCoordinates(String address) {
         if (address == null || address.isBlank()) {
             return Optional.empty();

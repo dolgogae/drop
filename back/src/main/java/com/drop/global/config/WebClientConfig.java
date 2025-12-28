@@ -1,10 +1,14 @@
 package com.drop.global.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.annotation.PostConstruct;
+
+@Slf4j
 @Configuration
 public class WebClientConfig {
 
@@ -13,6 +17,14 @@ public class WebClientConfig {
 
     @Value("${kakao.api.key}")
     private String kakaoApiKey;
+
+    @PostConstruct
+    public void logKakaoConfig() {
+        String maskedKey = kakaoApiKey != null && kakaoApiKey.length() > 8
+                ? kakaoApiKey.substring(0, 4) + "****" + kakaoApiKey.substring(kakaoApiKey.length() - 4)
+                : "NULL or TOO SHORT";
+        log.info("Kakao API Config - baseUrl: {}, key: {}", kakaoBaseUrl, maskedKey);
+    }
 
     @Bean
     public WebClient kakaoWebClient() {
