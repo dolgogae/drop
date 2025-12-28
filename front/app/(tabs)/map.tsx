@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import axiosInstance from '../../utils/axiosInstance';
 
-// 네이티브에서만 MapView 임포트
 let MapView: any = null;
 let Marker: any = null;
 if (Platform.OS !== 'web') {

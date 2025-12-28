@@ -26,10 +26,11 @@ public class GymService {
     public GymDto createGym(GymCreateDto gymCreateDto){
         Gym gym = Gym.create(gymCreateDto);
 
-        // location을 기반으로 위도/경도 자동 설정
-        if (gymCreateDto.getLocation() != null && !gymCreateDto.getLocation().isBlank()) {
-            geocodingService.getCoordinates(gymCreateDto.getLocation())
-                    .ifPresent(coords -> gym.updateCoordinates(coords.latitude(), coords.longitude()));
+        // 주소를 기반으로 위도/경도 자동 설정 (실패 시 예외 발생)
+        if (gymCreateDto.getAddress() != null && gymCreateDto.getAddress().getAddressLine1() != null) {
+            GeocodingService.Coordinates coords = geocodingService.getCoordinates(gymCreateDto.getAddress().getAddressLine1())
+                    .orElseThrow(() -> new IllegalStateException("주소를 좌표로 변환할 수 없습니다. 주소를 확인해주세요."));
+            gym.updateCoordinates(coords.latitude(), coords.longitude());
         }
 
         Gym savedGym = gymRepository.save(gym);

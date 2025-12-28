@@ -6,9 +6,6 @@ import com.drop.domain.user.gym.service.GymService;
 import com.drop.domain.user.member.dto.MemberCreateDto;
 import com.drop.domain.user.member.dto.MemberDto;
 import com.drop.domain.user.member.service.MemberService;
-import com.drop.domain.user.trainer.dto.TrainerCreateDto;
-import com.drop.domain.user.trainer.dto.TrainerDto;
-import com.drop.domain.user.trainer.service.TrainerService;
 import com.drop.domain.user.userbase.mapper.UserMapper;
 import com.drop.global.enums.UserRole;
 import com.drop.domain.user.userbase.data.UserBase;
@@ -34,7 +31,6 @@ public class UserService {
 
     private final UserJpaRepository userJpaRepository;
 
-    private final TrainerService trainerService;
     private final MemberService memberService;
     private final GymService gymService;
 
@@ -55,11 +51,6 @@ public class UserService {
         }
 
         switch (role) {
-            case TRAINER -> {
-                TrainerCreateDto trainerCreateDto = userDtoConverter.toTrainerDto(userCreateDto);
-                TrainerDto savedTrainer = trainerService.creatTrainer(trainerCreateDto);
-                return ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedTrainer);
-            }
             case MEMBER -> {
                 MemberCreateDto memberCreateDto = userDtoConverter.toMemberDto(userCreateDto);
                 MemberDto savedMember = memberService.createMember(memberCreateDto);

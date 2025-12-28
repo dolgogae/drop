@@ -9,7 +9,7 @@ spring:
       on-profile: dev
     import: classpath:application-secret.yml
   datasource:
-    url: jdbc:mysql://sihun-server.iptime.org:3306/drop?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/drop?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8#jdbc:mysql://sihun-server.iptime.org:3306/drop?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -45,3 +45,7 @@ logging.level:
 jwt:
   access-token-expiration-millis: 360000
   refresh-token-expiration-millis: 259200000
+
+kakao:
+  api:
+    base-url: https://dapi.kakao.com

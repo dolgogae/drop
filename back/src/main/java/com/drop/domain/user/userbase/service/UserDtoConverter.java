@@ -3,7 +3,6 @@ package com.drop.domain.user.userbase.service;
 import com.drop.domain.user.userbase.dto.UserCreateDto;
 import com.drop.domain.user.gym.dto.GymCreateDto;
 import com.drop.domain.user.member.dto.MemberCreateDto;
-import com.drop.domain.user.trainer.dto.TrainerCreateDto;
 import org.springframework.stereotype.Service;
 
 import java.util.function.Supplier;
@@ -17,10 +16,6 @@ public class UserDtoConverter {
         dto.setPassword(userCreateDto.getPassword());
         dto.setRole(userCreateDto.getRole());
         return dto;
-    }
-
-    public TrainerCreateDto toTrainerDto(UserCreateDto userCreateDto) {
-        return toDto(userCreateDto, TrainerCreateDto::new);
     }
 
     public MemberCreateDto toMemberDto(UserCreateDto userCreateDto) {
