@@ -1,6 +1,6 @@
 package com.drop.global.config;
 
-import com.drop.domain.user.userbase.service.UserService;
+import com.drop.domain.auth.service.UserService;
 import com.drop.global.redis.RedisUtils;
 import com.drop.global.security.AES128Service;
 import com.drop.global.security.CustomAuthenticationEntryPoint;

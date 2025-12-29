@@ -1,7 +1,5 @@
 package com.drop.global.security;
 
-import com.drop.domain.user.userbase.data.UserBase;
-import com.drop.domain.user.userbase.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,13 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    private final UserJpaRepository userJpaRepository;
+    private final AuthenticatableRepository authenticatableRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         log.info("loadUserByUsername called with email: {}", email);
 
-        UserBase user = userJpaRepository.findByEmail(email)
+        Authenticatable user = authenticatableRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("User not found with email: {}", email);
                     return new UsernameNotFoundException("존재하지 않는 아이디입니다.");
@@ -32,7 +30,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return userDetails;
     }
 
-    private UserDetails createUserDetails(UserBase user) {
+    private UserDetails createUserDetails(Authenticatable user) {
         return CustomUserDetails.of(user);
     }
 }

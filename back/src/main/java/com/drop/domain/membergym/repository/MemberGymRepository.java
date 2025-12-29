@@ -1,8 +1,8 @@
 package com.drop.domain.membergym.repository;
 
 import com.drop.domain.membergym.data.MemberGym;
-import com.drop.domain.user.gym.data.Gym;
-import com.drop.domain.user.member.data.Member;
+import com.drop.domain.gym.data.Gym;
+import com.drop.domain.member.data.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -15,7 +15,8 @@
       "Bash(git rm:*)",
       "Bash(grep:*)",
       "WebFetch(domain:postcode.map.daum.net)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(./gradlew build:*)"
     ]
   }
 }

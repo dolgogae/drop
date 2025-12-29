@@ -1,8 +1,8 @@
 package com.drop.domain.membergym.data;
 
 import com.drop.domain.base.BaseEntity;
-import com.drop.domain.user.gym.data.Gym;
-import com.drop.domain.user.member.data.Member;
+import com.drop.domain.gym.data.Gym;
+import com.drop.domain.member.data.Member;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

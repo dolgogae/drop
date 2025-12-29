@@ -56,7 +56,8 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
 
     private boolean doNotLogout(String accessToken) {
         String isLogout = redisUtils.getData(accessToken);
-        return isLogout.equals("false");
+        // Redis에 데이터가 없으면(null) 로그아웃 안 한 상태
+        return isLogout == null || "false".equals(isLogout);
     }
 
     // EXCLUDE_URL과 동일한 요청이 들어왔을 경우, 현재 필터를 진행하지 않고 다음 필터 진행
