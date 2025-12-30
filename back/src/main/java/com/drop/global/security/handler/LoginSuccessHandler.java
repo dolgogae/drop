@@ -21,6 +21,11 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = response.getHeader("Authorization");
         String refreshToken = response.getHeader("Refresh");
 
+        // "Bearer " prefix 제거 - 프론트엔드에서 직접 추가하므로
+        if (accessToken != null && accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.substring(7);
+        }
+
         log.info("Login success - accessToken: {}", accessToken);
         log.info("Login success - refreshToken: {}", refreshToken);
 
