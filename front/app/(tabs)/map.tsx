@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -50,13 +50,15 @@ interface Cluster {
 const { width, height } = Dimensions.get('window');
 const CLUSTER_DISTANCE = 0.01; // 클러스터링 거리 (약 1km)
 
+const DEBOUNCE_DELAY = 300; // 디바운스 딜레이 (ms)
+
 export default function MapScreen() {
   const mapRef = useRef<typeof MapView>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [myGymIds, setMyGymIds] = useState<Set<number>>(new Set());
-  const [clusters, setClusters] = useState<Cluster[]>([]);
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [addingGymId, setAddingGymId] = useState<number | null>(null);
   const [region, setRegion] = useState<Region>({
     latitude: 37.5665,
@@ -66,29 +68,93 @@ export default function MapScreen() {
   });
 
   useEffect(() => {
-    fetchGyms();
+    fetchGymsByBounds(region, true);
     fetchMyGyms();
+
+    // 컴포넌트 언마운트 시 타이머 정리
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    if (gyms.length > 0) {
-      clusterGyms(gyms, region);
-    }
-  }, [gyms, region]);
+  // 클러스터링을 useMemo로 최적화
+  const clusters = useMemo(() => {
+    if (gyms.length === 0) return [];
 
-  const fetchGyms = async () => {
+    const clusterDistance = CLUSTER_DISTANCE * (region.latitudeDelta / 0.1);
+    const clustered: Cluster[] = [];
+    const used = new Set<number>();
+
+    gyms.forEach((gym, index) => {
+      if (used.has(index)) return;
+
+      const cluster: Cluster = {
+        id: `cluster-${gym.id}`,
+        latitude: gym.latitude,
+        longitude: gym.longitude,
+        gyms: [gym],
+        count: 1,
+      };
+
+      gyms.forEach((otherGym, otherIndex) => {
+        if (index === otherIndex || used.has(otherIndex)) return;
+
+        const distance = Math.sqrt(
+          Math.pow(gym.latitude - otherGym.latitude, 2) +
+            Math.pow(gym.longitude - otherGym.longitude, 2)
+        );
+
+        if (distance < clusterDistance) {
+          cluster.gyms.push(otherGym);
+          cluster.count++;
+          used.add(otherIndex);
+        }
+      });
+
+      // 클러스터 중심 재계산
+      if (cluster.count > 1) {
+        cluster.latitude =
+          cluster.gyms.reduce((sum, g) => sum + g.latitude, 0) / cluster.count;
+        cluster.longitude =
+          cluster.gyms.reduce((sum, g) => sum + g.longitude, 0) / cluster.count;
+      }
+
+      used.add(index);
+      clustered.push(cluster);
+    });
+
+    return clustered;
+  }, [gyms, region.latitudeDelta]);
+
+  const fetchGymsByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
     try {
-      setLoading(true);
-      const response = await axiosInstance.get('/gyms/map');
+      // 초기 로딩일 때만 로딩 인디케이터 표시
+      if (isInitial) {
+        setIsInitialLoad(true);
+      }
+
+      // region에서 bounds 계산
+      const swLat = currentRegion.latitude - currentRegion.latitudeDelta / 2;
+      const swLng = currentRegion.longitude - currentRegion.longitudeDelta / 2;
+      const neLat = currentRegion.latitude + currentRegion.latitudeDelta / 2;
+      const neLng = currentRegion.longitude + currentRegion.longitudeDelta / 2;
+
+      const response = await axiosInstance.get('/gyms/map/bounds', {
+        params: { swLat, swLng, neLat, neLng },
+      });
       if (response.data?.data) {
         setGyms(response.data.data);
       }
     } catch (error) {
       console.error('체육관 목록 조회 실패:', error);
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setIsInitialLoad(false);
+      }
     }
-  };
+  }, []);
 
   const fetchMyGyms = async () => {
     try {
@@ -134,52 +200,6 @@ export default function MapScreen() {
     }
   };
 
-  const clusterGyms = (gymList: Gym[], currentRegion: Region) => {
-    const clusterDistance = CLUSTER_DISTANCE * (currentRegion.latitudeDelta / 0.1);
-    const clustered: Cluster[] = [];
-    const used = new Set<number>();
-
-    gymList.forEach((gym, index) => {
-      if (used.has(index)) return;
-
-      const cluster: Cluster = {
-        id: `cluster-${index}`,
-        latitude: gym.latitude,
-        longitude: gym.longitude,
-        gyms: [gym],
-        count: 1,
-      };
-
-      gymList.forEach((otherGym, otherIndex) => {
-        if (index === otherIndex || used.has(otherIndex)) return;
-
-        const distance = Math.sqrt(
-          Math.pow(gym.latitude - otherGym.latitude, 2) +
-            Math.pow(gym.longitude - otherGym.longitude, 2)
-        );
-
-        if (distance < clusterDistance) {
-          cluster.gyms.push(otherGym);
-          cluster.count++;
-          used.add(otherIndex);
-        }
-      });
-
-      // 클러스터 중심 재계산
-      if (cluster.count > 1) {
-        cluster.latitude =
-          cluster.gyms.reduce((sum, g) => sum + g.latitude, 0) / cluster.count;
-        cluster.longitude =
-          cluster.gyms.reduce((sum, g) => sum + g.longitude, 0) / cluster.count;
-      }
-
-      used.add(index);
-      clustered.push(cluster);
-    });
-
-    setClusters(clustered);
-  };
-
   const handleClusterPress = (cluster: Cluster) => {
     if (cluster.count === 1) {
       // 단일 체육관인 경우 바로 선택
@@ -201,9 +221,19 @@ export default function MapScreen() {
     }
   };
 
-  const handleRegionChangeComplete = (newRegion: Region) => {
+  const handleRegionChangeComplete = useCallback((newRegion: Region) => {
     setRegion(newRegion);
-  };
+
+    // 기존 타이머 취소
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // 디바운스 적용: 지도 이동이 멈춘 후 일정 시간 후에 API 호출
+    debounceRef.current = setTimeout(() => {
+      fetchGymsByBounds(newRegion);
+    }, DEBOUNCE_DELAY);
+  }, [fetchGymsByBounds]);
 
   const closeBottomSheet = () => {
     setSelectedCluster(null);
@@ -262,7 +292,7 @@ export default function MapScreen() {
           </Text>
           <View style={styles.webGymList}>
             <Text style={styles.webListTitle}>등록된 체육관 목록</Text>
-            {loading ? (
+            {isInitialLoad ? (
               <ActivityIndicator size="large" color="#588157" />
             ) : (
               <FlatList
@@ -281,7 +311,7 @@ export default function MapScreen() {
     );
   }
 
-  if (loading) {
+  if (isInitialLoad) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#588157" />
