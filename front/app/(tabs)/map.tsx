@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import axiosInstance from '../../utils/axiosInstance';
+import { gymEvents } from '../../utils/gymEvents';
 
 let MapView: any = null;
 let Marker: any = null;
@@ -77,6 +78,14 @@ export default function MapScreen() {
         clearTimeout(debounceRef.current);
       }
     };
+  }, []);
+
+  // 체육관 변경 이벤트 구독 (홈에서 제거 시 동기화)
+  useEffect(() => {
+    const unsubscribe = gymEvents.subscribe(() => {
+      fetchMyGyms();
+    });
+    return unsubscribe;
   }, []);
 
   // 클러스터링을 useMemo로 최적화
@@ -173,6 +182,7 @@ export default function MapScreen() {
       setAddingGymId(gymId);
       await axiosInstance.post('/member-gym', { gymId, isFavorite: false });
       setMyGymIds((prev) => new Set(prev).add(gymId));
+      gymEvents.emit();
       Alert.alert('성공', '내 체육관에 추가되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '추가에 실패했습니다.';
@@ -191,6 +201,7 @@ export default function MapScreen() {
         next.delete(gymId);
         return next;
       });
+      gymEvents.emit();
       Alert.alert('성공', '내 체육관에서 제거되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '제거에 실패했습니다.';
@@ -201,24 +212,8 @@ export default function MapScreen() {
   };
 
   const handleClusterPress = (cluster: Cluster) => {
-    if (cluster.count === 1) {
-      // 단일 체육관인 경우 바로 선택
-      setSelectedCluster(cluster);
-    } else {
-      // 여러 체육관인 경우 줌인하거나 리스트 표시
-      if (region.latitudeDelta > 0.02) {
-        // 줌 레벨이 낮으면 줌인
-        mapRef.current?.animateToRegion({
-          latitude: cluster.latitude,
-          longitude: cluster.longitude,
-          latitudeDelta: region.latitudeDelta / 2,
-          longitudeDelta: region.longitudeDelta / 2,
-        });
-      } else {
-        // 줌 레벨이 높으면 리스트 표시
-        setSelectedCluster(cluster);
-      }
-    }
+    // 마커 클릭 시 바로 체육관 정보 표시
+    setSelectedCluster(cluster);
   };
 
   const handleRegionChangeComplete = useCallback((newRegion: Region) => {
