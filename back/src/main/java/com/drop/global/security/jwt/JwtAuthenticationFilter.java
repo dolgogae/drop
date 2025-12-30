@@ -1,8 +1,9 @@
 package com.drop.global.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.drop.domain.user.userbase.dto.UserDto;
-import com.drop.domain.user.userbase.service.UserService;
+import com.drop.domain.auth.dto.UserDto;
+import com.drop.domain.auth.service.UserService;
+import com.drop.global.enums.UserRole;
 import com.drop.global.security.AES128Service;
 import com.drop.global.redis.RedisUtils;
 import com.drop.global.security.CustomUserDetails;
@@ -58,8 +59,9 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         jwtTokenProvider.accessTokenSetHeader(accessToken, response);
         jwtTokenProvider.refreshTokenSetHeader(encryptedRefreshToken, response);
 
+        UserRole role = UserRole.fromKey(customUserDetails.getUserRole());
         UserDto findUser = userService
-                .findUserAndUpdateTokens(customUserDetails.getId(), accessToken, refreshToken);
+                .findUserAndUpdateTokens(customUserDetails.getId(), role, accessToken, refreshToken);
         log.info("login success = {}", findUser);
 
         // 로그인 성공시 Refresh Token Redis 저장 ( key = Email / value = Refresh Token )

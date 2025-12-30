@@ -3,7 +3,7 @@ package com.drop.domain.home.service;
 import com.drop.domain.membergym.service.MemberGymService;
 import com.drop.domain.home.dto.HomeSummaryDto;
 import com.drop.domain.membergym.dto.MemberGymPreviewDto;
-import com.drop.domain.user.gym.service.GymService;
+import com.drop.domain.gym.service.GymService;
 import com.drop.global.enums.LocationMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

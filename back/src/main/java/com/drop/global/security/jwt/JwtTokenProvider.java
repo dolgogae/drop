@@ -69,6 +69,7 @@ public class JwtTokenProvider {
         Date accessTokenExpiresIn = getTokenExpiration(accessTokenExpirationMillis);
         Date refreshTokenExpiresIn = getTokenExpiration(refreshTokenExpirationMillis);
         Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", customUserDetails.getId());
         claims.put("userRole", customUserDetails.getUserRole());
 
         String accessToken = Jwts.builder()
@@ -83,6 +84,7 @@ public class JwtTokenProvider {
                 .setSubject(customUserDetails.getEmail())
                 .setIssuedAt(Calendar.getInstance().getTime())
                 .setExpiration(refreshTokenExpiresIn)
+                .claim("userId", customUserDetails.getId())
                 .claim("userRole", customUserDetails.getUserRole())
                 .signWith(key)
                 .compact();
@@ -105,8 +107,10 @@ public class JwtTokenProvider {
         }
 
         String authority = claims.get("userRole").toString();
+        Long userId = claims.get("userId") != null ? Long.valueOf(claims.get("userId").toString()) : null;
 
         CustomUserDetails customUserDetails = CustomUserDetails.of(
+                userId,
                 claims.getSubject(),
                 authority);
 
@@ -118,6 +122,12 @@ public class JwtTokenProvider {
     // JWT 토큰에서 email 추출
     public String getUserEmail(String refreshToken){
         return parseClaims(refreshToken).getSubject();
+    }
+
+    // JWT 토큰에서 userId 추출
+    public Long getUserId(String token) {
+        Object userId = parseClaims(token).get("userId");
+        return userId != null ? Long.valueOf(userId.toString()) : null;
     }
 
     public UserRole getUserPermission(String refreshToken){

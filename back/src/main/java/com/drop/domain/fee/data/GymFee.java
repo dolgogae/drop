@@ -3,7 +3,7 @@ package com.drop.domain.fee.data;
 import com.drop.domain.base.BaseEntity;
 import com.drop.domain.fee.dto.GymFeeCreateDto;
 import com.drop.domain.fee.dto.GymFeeUpdateDto;
-import com.drop.domain.user.gym.data.Gym;
+import com.drop.domain.gym.data.Gym;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,7 +27,7 @@ public class GymFee extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID")
+    @JoinColumn(name = "GYM_ID")
     private Gym gym;
 
     private Long price;

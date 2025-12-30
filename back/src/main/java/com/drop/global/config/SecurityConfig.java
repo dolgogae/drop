@@ -1,6 +1,6 @@
 package com.drop.global.config;
 
-import com.drop.domain.user.userbase.service.UserService;
+import com.drop.domain.auth.service.UserService;
 import com.drop.global.redis.RedisUtils;
 import com.drop.global.security.AES128Service;
 import com.drop.global.security.CustomAuthenticationEntryPoint;
@@ -46,12 +46,14 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
 
     private final static String[] permitAllUrl = {
-            "/","/**",
+            "/",
             "/h2-console",
             "/login/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/auth/**", "/user/**"};
+            "/v3/api-docs/**",
+            "/auth/**", "/user/**",
+            "/gyms/**", "/home/**", "/member-gym/**"};
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
@@ -68,6 +70,7 @@ public class SecurityConfig {
                         .antMatchers(permitAllUrl).permitAll()
                         .antMatchers("/admin/**").hasAnyRole(ADMIN.name())
                         .antMatchers("/fee/**").hasAnyRole(GYM.name(), ADMIN.name(), TRAINER.name())
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .exceptionHandling(exception

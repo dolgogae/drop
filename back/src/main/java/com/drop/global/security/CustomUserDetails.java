@@ -1,6 +1,5 @@
 package com.drop.global.security;
 
-import com.drop.domain.user.userbase.data.UserBase;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -12,13 +11,13 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @ToString
-public class CustomUserDetails extends UserBase implements UserDetails {
+public class CustomUserDetails implements UserDetails {
     private Long id;
     private String email;
     private String userRole;
     private String password;
 
-    private CustomUserDetails(UserBase user) {
+    private CustomUserDetails(Authenticatable user) {
         this.id = user.getId();
         this.email = user.getEmail();
         this.password = user.getPassword();
@@ -30,18 +29,28 @@ public class CustomUserDetails extends UserBase implements UserDetails {
         this.userRole = userRole;
     }
 
+    private CustomUserDetails(Long id, String email, String userRole) {
+        this.id = id;
+        this.email = email;
+        this.userRole = userRole;
+    }
+
     private CustomUserDetails(String email, String password, String userRole) {
         this.email = email;
         this.password = password;
         this.userRole = userRole;
     }
 
-    public static CustomUserDetails of(UserBase user) {
+    public static CustomUserDetails of(Authenticatable user) {
         return new CustomUserDetails(user);
     }
 
     public static CustomUserDetails of(String email, String role) {
         return new CustomUserDetails(email, role);
+    }
+
+    public static CustomUserDetails of(Long id, String email, String role) {
+        return new CustomUserDetails(id, email, role);
     }
 
     public static CustomUserDetails of(String email, String password, String role) {

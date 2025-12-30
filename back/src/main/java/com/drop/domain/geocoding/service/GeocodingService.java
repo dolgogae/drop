@@ -44,11 +44,6 @@ public class GeocodingService {
         }
     }
 
-    /**
-     * 주소 유효성을 검증합니다.
-     * @param query 검색할 주소
-     * @return 검증 결과 (유효 여부, 정제된 주소, 좌표)
-     */
     public AddressValidationResponseDto validateAddress(String query) {
         if (query == null || query.isBlank()) {
             return AddressValidationResponseDto.invalid(query);

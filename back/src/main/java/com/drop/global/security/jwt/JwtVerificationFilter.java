@@ -38,12 +38,18 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
             String accessToken = jwtTokenProvider.resolveAccessToken(request);
+            log.info("[JwtVerificationFilter] URI: {}, Token exists: {}", request.getRequestURI(), accessToken != null);
             if (StringUtils.hasText(accessToken) && doNotLogout(accessToken)
                     && jwtTokenProvider.validateToken(accessToken, response)) {
                 setAuthenticationToContext(accessToken);
+                log.info("[JwtVerificationFilter] Authentication set successfully");
+            } else {
+                log.warn("[JwtVerificationFilter] Authentication NOT set - token: {}, doNotLogout: {}",
+                    accessToken != null, accessToken != null ? doNotLogout(accessToken) : "N/A");
             }
             // TODO: 예외처리 리팩토링
         } catch (RuntimeException e) {
+            log.error("[JwtVerificationFilter] Exception occurred: {}", e.getMessage(), e);
             if (e instanceof BusinessException) {
                 ObjectMapper objectMapper = new ObjectMapper();
                 String json = objectMapper.writeValueAsString(ErrorResponse.of(((BusinessException) e).getErrorCode()));
@@ -56,7 +62,8 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
 
     private boolean doNotLogout(String accessToken) {
         String isLogout = redisUtils.getData(accessToken);
-        return isLogout.equals("false");
+        // Redis에 데이터가 없으면(null) 로그아웃 안 한 상태
+        return isLogout == null || "false".equals(isLogout);
     }
 
     // EXCLUDE_URL과 동일한 요청이 들어왔을 경우, 현재 필터를 진행하지 않고 다음 필터 진행
