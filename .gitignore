@@ -1,8 +1,12 @@
 # IDE
 .idea/
+.vscode/
 *.iml
 *.iws
 *.ipr
+
+# Claude
+.claude/
 
 # OS
 .DS_Store
