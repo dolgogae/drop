@@ -50,10 +50,38 @@ public class Member extends BaseEntity implements Authenticatable {
     // Member-specific fields
     private String exampleColumn;
 
+    @Column(name = "PROFILE_IMAGE")
+    private String profileImage;
+
+    @Column(name = "NOTIFICATION_ENABLED")
+    @Builder.Default
+    private Boolean notificationEnabled = true;
+
     @Override
     public void setTokens(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
+    }
+
+    public void updateUsername(String username) {
+        this.username = username;
+    }
+
+    public void updatePassword(String password) {
+        this.password = password;
+    }
+
+    public void updateProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public void updateNotificationEnabled(Boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
+    }
+
+    public void clearTokens() {
+        this.accessToken = null;
+        this.refreshToken = null;
     }
 
     public static Member create(MemberCreateDto memberCreateDto) {

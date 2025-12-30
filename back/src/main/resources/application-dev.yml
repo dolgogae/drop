@@ -49,3 +49,7 @@ jwt:
 kakao:
   api:
     base-url: https://dapi.kakao.com
+
+file:
+  upload:
+    path: ./image

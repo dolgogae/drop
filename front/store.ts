@@ -6,7 +6,7 @@ interface AuthState {
   isLoggedIn: boolean;
 }
 
-const initialState: AuthState = {
+const initialAuthState: AuthState = {
   accessToken: null,
   refreshToken: null,
   isLoggedIn: false,
@@ -14,7 +14,7 @@ const initialState: AuthState = {
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: initialAuthState,
   reducers: {
     setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
       state.accessToken = action.payload.accessToken;
@@ -29,13 +29,50 @@ const authSlice = createSlice({
   },
 });
 
+interface UserProfile {
+  id: number | null;
+  email: string | null;
+  username: string | null;
+  profileImage: string | null;
+  notificationEnabled: boolean;
+  role: string | null;
+}
+
+interface UserState {
+  profile: UserProfile | null;
+}
+
+const initialUserState: UserState = {
+  profile: null,
+};
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState: initialUserState,
+  reducers: {
+    setProfile: (state, action: PayloadAction<UserProfile>) => {
+      state.profile = action.payload;
+    },
+    updateProfile: (state, action: PayloadAction<Partial<UserProfile>>) => {
+      if (state.profile) {
+        state.profile = { ...state.profile, ...action.payload };
+      }
+    },
+    clearProfile: (state) => {
+      state.profile = null;
+    },
+  },
+});
+
 export const { setTokens, clearTokens } = authSlice.actions;
+export const { setProfile, updateProfile, clearProfile } = userSlice.actions;
 
 export const store = configureStore({
   reducer: {
     auth: authSlice.reducer,
+    user: userSlice.reducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

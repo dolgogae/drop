@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -17,6 +18,7 @@ import {
 } from 'react-native';
 import { HomeState, LocationMode, LocationModeText } from '../../constants/enums';
 import axiosInstance from '../../utils/axiosInstance';
+import { gymEvents } from '../../utils/gymEvents';
 
 interface MyGymPreview {
   gymId: number;
@@ -126,6 +128,8 @@ export default function HomeScreen() {
     }
   }, [currentLocation]);
 
+  const isInitialMount = useRef(true);
+
   // 초기 로딩
   useEffect(() => {
     const initializeHome = async () => {
@@ -145,6 +149,43 @@ export default function HomeScreen() {
 
     initializeHome();
   }, []);
+
+  // 탭 포커스 시 데이터 갱신
+  useFocusEffect(
+    useCallback(() => {
+      // 초기 마운트 시에는 스킵 (useEffect에서 이미 처리)
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+      }
+
+      // 탭에 다시 포커스될 때 데이터 갱신 (로딩 표시 없이 백그라운드에서)
+      const refreshData = async () => {
+        try {
+          const { status } = await Location.getForegroundPermissionsAsync();
+
+          const params: Record<string, any> = {};
+          if (status === Location.PermissionStatus.GRANTED) {
+            const location = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            params.latGrid = snapToGrid(location.coords.latitude);
+            params.lngGrid = snapToGrid(location.coords.longitude);
+            params.locationMode = LocationMode.CURRENT;
+          }
+
+          const response = await axiosInstance.get('/home/summary', { params });
+          if (response.data?.data) {
+            setSummary(response.data.data);
+          }
+        } catch (error) {
+          console.error('홈 데이터 갱신 실패:', error);
+        }
+      };
+
+      refreshData();
+    }, [])
+  );
 
   // 앱 포그라운드 복귀 시 데이터 갱신
   useEffect(() => {
@@ -172,6 +213,29 @@ export default function HomeScreen() {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
   }, [fetchHomeSummary, checkLocationPermission, getCurrentLocation]);
+
+  // 체육관 변경 이벤트 구독 (맵에서 추가/제거 시 동기화)
+  useEffect(() => {
+    const refreshGyms = async () => {
+      try {
+        const params: Record<string, any> = {};
+        if (currentLocation) {
+          params.latGrid = currentLocation.lat;
+          params.lngGrid = currentLocation.lng;
+          params.locationMode = LocationMode.CURRENT;
+        }
+        const response = await axiosInstance.get('/home/summary', { params });
+        if (response.data?.data) {
+          setSummary(response.data.data);
+        }
+      } catch (error) {
+        console.error('체육관 데이터 갱신 실패:', error);
+      }
+    };
+
+    const unsubscribe = gymEvents.subscribe(refreshGyms);
+    return unsubscribe;
+  }, [currentLocation]);
 
   const handleGoToMap = () => {
     router.push('/(tabs)/map');
@@ -243,6 +307,7 @@ export default function HomeScreen() {
           myGymsPreview: summary.myGymsPreview.filter((g) => g.gymId !== gymId),
         });
       }
+      gymEvents.emit();
     } catch (error) {
       console.error('체육관 제거 실패:', error);
     }
@@ -439,10 +504,36 @@ export default function HomeScreen() {
                 onPress={() => handleGymPress(gym)}
                 activeOpacity={gym.isDeleted ? 1 : 0.7}
               >
+                {/* 별 버튼 (좌상단) */}
+                {!gym.isDeleted && (
+                  <TouchableOpacity
+                    style={styles.favoriteButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite(gym.gymId);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    disabled={gym.togglingFavorite}
+                  >
+                    {gym.togglingFavorite ? (
+                      <ActivityIndicator size="small" color="#FFD700" />
+                    ) : (
+                      <Ionicons
+                        name={gym.isFavorite ? 'star' : 'star-outline'}
+                        size={18}
+                        color={gym.isFavorite ? '#FFD700' : '#ccc'}
+                      />
+                    )}
+                  </TouchableOpacity>
+                )}
+
                 {/* X 버튼 (우상단) */}
                 <TouchableOpacity
                   style={styles.removeButton}
-                  onPress={() => handleRemoveGym(gym.gymId)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleRemoveGym(gym.gymId);
+                  }}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Ionicons name="close" size={16} color="#999" />
@@ -462,31 +553,10 @@ export default function HomeScreen() {
                       styles.gymPreviewName,
                       gym.isDeleted && styles.gymPreviewNameDeleted,
                     ]}
-                    numberOfLines={1}
+                    numberOfLines={2}
                   >
                     {gym.isDeleted ? '없어진 체육관' : gym.name}
                   </Text>
-                  {!gym.isDeleted && (
-                    <TouchableOpacity
-                      style={styles.favoriteButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleToggleFavorite(gym.gymId);
-                      }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      disabled={gym.togglingFavorite}
-                    >
-                      {gym.togglingFavorite ? (
-                        <ActivityIndicator size="small" color="#FFD700" />
-                      ) : (
-                        <Ionicons
-                          name={gym.isFavorite ? 'star' : 'star-outline'}
-                          size={18}
-                          color={gym.isFavorite ? '#FFD700' : '#ccc'}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  )}
                 </View>
               </TouchableOpacity>
             ))}
@@ -648,16 +718,18 @@ const styles = StyleSheet.create({
   gymPreviewCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    paddingTop: 24,
+    padding: 8,
     marginRight: 12,
-    minWidth: 140,
+    width: 120,
+    height: 120,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   gymPreviewCardDeleted: {
     backgroundColor: '#f8f8f8',
@@ -670,30 +742,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gymPreviewName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: '#344E41',
-    flex: 1,
+    textAlign: 'center',
   },
   gymPreviewNameDeleted: {
     color: '#999',
     fontStyle: 'italic',
   },
   favoriteButton: {
-    marginLeft: 8,
-    padding: 4,
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   deletedIcon: {
     marginRight: 4,
   },
   removeButton: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#f0f0f0',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },

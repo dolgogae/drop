@@ -24,7 +24,15 @@ public enum ResultCode {
     MY_GYM_LIST_SUCCESS(200, "F001", "내 체육관 목록 조회 성공"),
     MY_GYM_ADD_SUCCESS(200, "F002", "내 체육관에 추가 성공"),
     MY_GYM_FAVORITE_TOGGLE_SUCCESS(200, "F003", "즐겨찾기 상태 변경 성공"),
-    MY_GYM_REMOVE_SUCCESS(200, "F004", "내 체육관에서 제거 성공");
+    MY_GYM_REMOVE_SUCCESS(200, "F004", "내 체육관에서 제거 성공"),
+
+    // MyPage
+    PROFILE_UPDATE_SUCCESS(200, "MP001", "프로필이 수정되었습니다."),
+    PASSWORD_CHANGE_SUCCESS(200, "MP002", "비밀번호가 변경되었습니다."),
+    WITHDRAW_SUCCESS(200, "MP003", "회원 탈퇴가 완료되었습니다."),
+    NOTIFICATION_UPDATE_SUCCESS(200, "MP004", "알림 설정이 변경되었습니다."),
+    PROFILE_IMAGE_UPLOAD_SUCCESS(200, "MP005", "프로필 사진이 등록되었습니다."),
+    PROFILE_IMAGE_DELETE_SUCCESS(200, "MP006", "프로필 사진이 삭제되었습니다.");
 
     private int status;
     private final String code;
