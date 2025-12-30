@@ -36,7 +36,14 @@ public enum ErrorCode {
 
     // Encrypt
     ENCRYPTION_FAILED(400, "E001", "Encryption failed"),
-    DECRYPTION_FAILED(400, "E002", "Decryption failed");
+    DECRYPTION_FAILED(400, "E002", "Decryption failed"),
+
+    // MyPage
+    CURRENT_PASSWORD_INVALID(400, "MP001", "현재 비밀번호가 일치하지 않습니다."),
+    FILE_UPLOAD_FAILED(500, "MP002", "파일 업로드에 실패했습니다."),
+    FILE_NOT_FOUND(404, "MP003", "파일을 찾을 수 없습니다."),
+    INVALID_FILE_TYPE(400, "MP004", "허용되지 않는 파일 형식입니다."),
+    FILE_SIZE_EXCEEDED(400, "MP005", "파일 크기가 제한을 초과했습니다.");
 
     private int status;
     private final String code;

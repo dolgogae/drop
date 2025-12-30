@@ -16,7 +16,8 @@
       "Bash(grep:*)",
       "WebFetch(domain:postcode.map.daum.net)",
       "Bash(ls:*)",
-      "Bash(./gradlew build:*)"
+      "Bash(./gradlew build:*)",
+      "Bash(npx expo install:*)"
     ]
   }
 }
