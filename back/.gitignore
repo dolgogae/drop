@@ -39,3 +39,6 @@ out/
 # Secret files
 /src/main/resources/application-secret.yml
 /src/main/resources/application-secret-*.yml
+
+# Image upload folder
+/image/

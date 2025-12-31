@@ -51,11 +51,7 @@ export default function ProfileImageScreen() {
         type,
       } as any);
 
-      const response = await axiosInstance.post('/mypage/profile-image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axiosInstance.post('/mypage/profile-image', formData);
 
       dispatch(updateProfile({ profileImage: response.data.data }));
       Alert.alert(t('mypage.updateSuccess'));

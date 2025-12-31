@@ -21,6 +21,12 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
+    // FormData 전송 시 Content-Type 헤더를 삭제하여 Axios가 자동으로
+    // multipart/form-data와 boundary를 설정하도록 함
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => {
