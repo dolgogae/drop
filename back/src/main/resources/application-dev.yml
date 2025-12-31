@@ -8,6 +8,10 @@ spring:
     activate:
       on-profile: dev
     import: classpath:application-secret.yml
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
   datasource:
     url: jdbc:mysql://localhost:3306/drop?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8#jdbc:mysql://sihun-server.iptime.org:3306/drop?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -43,7 +47,7 @@ logging.level:
   org.hibernate.SQL: debug
 
 jwt:
-  access-token-expiration-millis: 360000
+  access-token-expiration-millis: 3600000
   refresh-token-expiration-millis: 259200000
 
 kakao:
@@ -52,4 +56,4 @@ kakao:
 
 file:
   upload:
-    path: ./image
+    path: /Users/sihun/dev/project/drop/back/image
