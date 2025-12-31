@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
   SafeAreaView,
@@ -70,24 +71,30 @@ export default function GymDetailScreen() {
     router.back();
   };
 
-  const handleCall = () => {
+  const handleCall = async () => {
     if (gym?.phoneNumber) {
-      Linking.openURL(`tel:${gym.phoneNumber}`);
+      const phoneUrl = `tel:${gym.phoneNumber}`;
+      const canOpen = await Linking.canOpenURL(phoneUrl);
+      if (canOpen) {
+        Linking.openURL(phoneUrl);
+      } else {
+        Alert.alert('전화 연결', `전화번호: ${gym.phoneNumber}`, [{ text: '확인' }]);
+      }
     }
   };
 
-  const handleOpenMap = () => {
-    if (gym?.latitude && gym?.longitude) {
-      const scheme = Platform.select({
-        ios: 'maps:',
-        android: 'geo:',
-      });
-      const url = Platform.select({
-        ios: `maps:?q=${gym.name}&ll=${gym.latitude},${gym.longitude}`,
-        android: `geo:${gym.latitude},${gym.longitude}?q=${gym.latitude},${gym.longitude}(${gym.name})`,
-      });
-      if (url) {
-        Linking.openURL(url);
+  const handleOpenMap = async () => {
+    const address = getFullAddress();
+    if (address) {
+      const encodedAddress = encodeURIComponent(address);
+      const naverMapAppUrl = `nmap://search?query=${encodedAddress}&appname=com.drop.app`;
+      const naverMapWebUrl = `https://map.naver.com/v5/search/${encodedAddress}`;
+
+      const canOpenNaverMap = await Linking.canOpenURL(naverMapAppUrl);
+      if (canOpenNaverMap) {
+        Linking.openURL(naverMapAppUrl);
+      } else {
+        Linking.openURL(naverMapWebUrl);
       }
     }
   };
