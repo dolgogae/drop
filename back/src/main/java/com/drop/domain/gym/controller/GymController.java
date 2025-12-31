@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,5 +42,14 @@ public class GymController {
     ) {
         List<GymDto> gyms = gymService.getGymsByBounds(swLat, swLng, neLat, neLng);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.GYM_LIST_SUCCESS, gyms));
+    }
+
+    @Operation(summary = "체육관 상세 조회", description = "체육관 ID로 상세 정보를 조회합니다.")
+    @GetMapping("/{gymId}")
+    public ResponseEntity<ResultResponse> getGymById(
+            @Parameter(description = "체육관 ID") @PathVariable Long gymId
+    ) {
+        GymDto gym = gymService.getGymById(gymId);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.GYM_DETAIL_SUCCESS, gym));
     }
 }

@@ -16,6 +16,7 @@ public enum ResultCode {
 
     // Gym
     GYM_LIST_SUCCESS(200, "G001", "체육관 목록 조회 성공"),
+    GYM_DETAIL_SUCCESS(200, "G002", "체육관 상세 조회 성공"),
 
     // Home
     HOME_SUMMARY_SUCCESS(200, "H001", "홈 화면 정보 조회 성공"),
