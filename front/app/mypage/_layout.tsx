@@ -27,11 +27,11 @@ export default function MyPageLayout() {
     >
       <Stack.Screen
         name="edit-profile"
-        options={{ title: t('mypage.editProfile') }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="change-password"
-        options={{ title: t('mypage.changePassword') }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="profile-image"

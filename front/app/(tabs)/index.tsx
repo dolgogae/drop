@@ -247,11 +247,9 @@ export default function HomeScreen() {
 
   const handleGymPress = (gym: MyGymPreview) => {
     if (gym.isDeleted) {
-      // 삭제된 체육관은 클릭 불가
       return;
     }
-    // TODO: 체육관 상세 페이지로 이동
-    console.log('체육관 상세:', gym.gymId);
+    router.push(`/gym/${gym.gymId}` as any);
   };
 
   // 즐겨찾기 토글
@@ -468,7 +466,7 @@ export default function HomeScreen() {
 
         {/* 내 체육관 섹션 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>내 체육관</Text>
+          <Text style={styles.sectionTitle}>즐겨찾기</Text>
           {(summary?.hasMoreMyGyms || (summary?.myGymsPreview && summary.myGymsPreview.length > 0)) && (
             <TouchableOpacity onPress={handleGoToMyGyms}>
               <Text style={styles.moreButton}>더보기</Text>

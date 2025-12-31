@@ -51,6 +51,13 @@ public class GymService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public GymDto getGymById(Long gymId) {
+        Gym gym = gymRepository.findById(gymId)
+                .orElseThrow(() -> new IllegalArgumentException("체육관을 찾을 수 없습니다."));
+        return gymMapper.toDto(gym);
+    }
+
     private static final double DEFAULT_RADIUS_KM = 5.0;
 
     @Transactional(readOnly = true)

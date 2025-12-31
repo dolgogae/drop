@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -54,6 +55,7 @@ const CLUSTER_DISTANCE = 0.01; // 클러스터링 거리 (약 1km)
 const DEBOUNCE_DELAY = 300; // 디바운스 딜레이 (ms)
 
 export default function MapScreen() {
+  const router = useRouter();
   const mapRef = useRef<typeof MapView>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [gyms, setGyms] = useState<Gym[]>([]);
@@ -234,12 +236,16 @@ export default function MapScreen() {
     setSelectedCluster(null);
   };
 
+  const handleGymPress = (gymId: number) => {
+    router.push(`/gym/${gymId}` as any);
+  };
+
   const renderGymItem = ({ item }: { item: Gym }) => {
     const isMyGym = myGymIds.has(item.id);
     const isProcessing = addingGymId === item.id;
 
     return (
-      <View style={styles.gymItem}>
+      <TouchableOpacity style={styles.gymItem} onPress={() => handleGymPress(item.id)} activeOpacity={0.7}>
         <View style={styles.gymInfo}>
           <Text style={styles.gymName}>{item.name}</Text>
           <Text style={styles.gymLocation}>{item.location}</Text>
@@ -272,7 +278,7 @@ export default function MapScreen() {
             </>
           )}
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     );
   };
 
