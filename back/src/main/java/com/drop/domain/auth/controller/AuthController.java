@@ -6,9 +6,9 @@ import com.drop.domain.auth.dto.UserCreateDto;
 import com.drop.domain.auth.service.GoogleAuthService;
 import com.drop.domain.auth.service.UserDtoConverter;
 import com.drop.domain.auth.service.UserService;
-import com.drop.domain.gym.dto.GymCreateDto;
-import com.drop.domain.gym.dto.GymDto;
-import com.drop.domain.gym.service.GymService;
+import com.drop.domain.crossfitbox.dto.CrossfitBoxCreateDto;
+import com.drop.domain.crossfitbox.dto.CrossfitBoxDto;
+import com.drop.domain.crossfitbox.service.CrossfitBoxService;
 import com.drop.domain.member.dto.MemberCreateDto;
 import com.drop.domain.member.dto.MemberDto;
 import com.drop.domain.member.service.MemberService;
@@ -35,7 +35,7 @@ import javax.validation.constraints.NotBlank;
 public class AuthController {
     private final UserService userService;
     private final MemberService memberService;
-    private final GymService gymService;
+    private final CrossfitBoxService crossfitBoxService;
     private final GoogleAuthService googleAuthService;
 
     private final PasswordEncoder passwordEncoder;
@@ -65,16 +65,16 @@ public class AuthController {
         return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
     }
 
-    @Operation(summary = "체육관(Gym) 가입", description = "체육관 전용 회원가입")
-    @PostMapping("/sign-up/gym")
-    public ResponseEntity<ResultResponse> signUpGym(
-            @RequestBody @Valid GymCreateDto gymCreateDto
+    @Operation(summary = "크로스핏박스(CrossfitBox) 가입", description = "크로스핏박스 전용 회원가입")
+    @PostMapping("/sign-up/crossfit-box")
+    public ResponseEntity<ResultResponse> signUpCrossfitBox(
+            @RequestBody @Valid CrossfitBoxCreateDto crossfitBoxCreateDto
     ){
-        gymCreateDto.setPassword(passwordEncoder.encode(gymCreateDto.getPassword()));
-        gymCreateDto.setRole(UserRole.GYM);
+        crossfitBoxCreateDto.setPassword(passwordEncoder.encode(crossfitBoxCreateDto.getPassword()));
+        crossfitBoxCreateDto.setRole(UserRole.GYM);
 
-        GymDto savedGym = gymService.createGym(gymCreateDto);
-        ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedGym);
+        CrossfitBoxDto savedCrossfitBox = crossfitBoxService.createCrossfitBox(crossfitBoxCreateDto);
+        ResultResponse result = ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedCrossfitBox);
         return new ResponseEntity<>(result, HttpStatus.valueOf(result.getStatus()));
     }
 

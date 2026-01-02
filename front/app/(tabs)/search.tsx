@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import axiosInstance from '../../utils/axiosInstance';
 
-interface GymResult {
+interface CrossfitBoxResult {
   id: number;
   name: string;
   phoneNumber: string | null;
@@ -29,7 +29,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
-  const [gyms, setGyms] = useState<GymResult[]>([]);
+  const [crossfitBoxes, setCrossfitBoxes] = useState<CrossfitBoxResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -42,9 +42,9 @@ export default function SearchScreen() {
   }, [keyword]);
 
   useEffect(() => {
-    const searchGyms = async () => {
+    const searchCrossfitBoxes = async () => {
       if (!debouncedKeyword.trim()) {
-        setGyms([]);
+        setCrossfitBoxes([]);
         setHasSearched(false);
         return;
       }
@@ -53,36 +53,36 @@ export default function SearchScreen() {
       setHasSearched(true);
 
       try {
-        const response = await axiosInstance.get('/gyms/search', {
+        const response = await axiosInstance.get('/crossfit-boxes/search', {
           params: { keyword: debouncedKeyword },
         });
-        setGyms(response.data.data || []);
+        setCrossfitBoxes(response.data.data || []);
       } catch (error) {
-        console.error('체육관 검색 실패:', error);
-        setGyms([]);
+        console.error('크로스핏박스 검색 실패:', error);
+        setCrossfitBoxes([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    searchGyms();
+    searchCrossfitBoxes();
   }, [debouncedKeyword]);
 
   const clearSearch = () => {
     setKeyword('');
-    setGyms([]);
+    setCrossfitBoxes([]);
     setHasSearched(false);
   };
 
-  const handleGymPress = (gymId: number) => {
-    router.push(`/gym/${gymId}`);
+  const handleCrossfitBoxPress = (crossfitBoxId: number) => {
+    router.push(`/crossfit-box/${crossfitBoxId}`);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>체육관 검색</Text>
+          <Text style={styles.title}>크로스핏박스 검색</Text>
         </View>
 
         <View style={styles.inputSection}>
@@ -92,7 +92,7 @@ export default function SearchScreen() {
               style={styles.input}
               value={keyword}
               onChangeText={setKeyword}
-              placeholder="예: 클라이밍파크"
+              placeholder="예: 크로스핏 강남"
               placeholderTextColor="#A3B18A"
             />
             {keyword.length > 0 && (
@@ -109,30 +109,30 @@ export default function SearchScreen() {
         {hasSearched && !isLoading && (
           <View style={styles.resultSection}>
             <Text style={styles.resultTitle}>
-              검색 결과 {gyms.length > 0 ? `(${gyms.length}개)` : ''}
+              검색 결과 {crossfitBoxes.length > 0 ? `(${crossfitBoxes.length}개)` : ''}
             </Text>
-            {gyms.length === 0 ? (
+            {crossfitBoxes.length === 0 ? (
               <View style={styles.emptyResult}>
                 <Ionicons name="search-outline" size={48} color="#A3B18A" />
                 <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
               </View>
             ) : (
-              gyms.map((gym) => (
+              crossfitBoxes.map((crossfitBox) => (
                 <TouchableOpacity
-                  key={gym.id}
-                  style={styles.gymCard}
-                  onPress={() => handleGymPress(gym.id)}
+                  key={crossfitBox.id}
+                  style={styles.crossfitBoxCard}
+                  onPress={() => handleCrossfitBoxPress(crossfitBox.id)}
                 >
-                  <View style={styles.gymInfo}>
-                    <Text style={styles.gymName}>{gym.name}</Text>
-                    {gym.address && (
-                      <Text style={styles.gymAddress}>
-                        {gym.address.addressLine1}
-                        {gym.address.addressLine2 ? ` ${gym.address.addressLine2}` : ''}
+                  <View style={styles.crossfitBoxInfo}>
+                    <Text style={styles.crossfitBoxName}>{crossfitBox.name}</Text>
+                    {crossfitBox.address && (
+                      <Text style={styles.crossfitBoxAddress}>
+                        {crossfitBox.address.addressLine1}
+                        {crossfitBox.address.addressLine2 ? ` ${crossfitBox.address.addressLine2}` : ''}
                       </Text>
                     )}
-                    {gym.phoneNumber && (
-                      <Text style={styles.gymPhone}>{gym.phoneNumber}</Text>
+                    {crossfitBox.phoneNumber && (
+                      <Text style={styles.crossfitBoxPhone}>{crossfitBox.phoneNumber}</Text>
                     )}
                   </View>
                   <Ionicons name="chevron-forward" size={20} color="#A3B18A" />
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     color: '#A3B18A',
     marginTop: 12,
   },
-  gymCard: {
+  crossfitBoxCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
@@ -229,20 +229,20 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  gymInfo: {
+  crossfitBoxInfo: {
     flex: 1,
   },
-  gymName: {
+  crossfitBoxName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#344E41',
   },
-  gymAddress: {
+  crossfitBoxAddress: {
     fontSize: 14,
     color: '#588157',
     marginTop: 4,
   },
-  gymPhone: {
+  crossfitBoxPhone: {
     fontSize: 12,
     color: '#A3B18A',
     marginTop: 2,

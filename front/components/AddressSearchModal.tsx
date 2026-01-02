@@ -36,8 +36,15 @@ const createPostcodeHtml = () => `
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
+    html, body { width: 100%; height: 100%; overflow: hidden; -webkit-text-size-adjust: none; }
     #wrap { width: 100%; height: 100%; }
+    /* 한글 입력 안정화를 위한 스타일 */
+    input, textarea {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-appearance: none;
+      font-size: 16px !important;
+    }
   </style>
 </head>
 <body>
@@ -45,7 +52,24 @@ const createPostcodeHtml = () => `
   <script src="${POSTCODE_URL}"><\/script>
   <script>
     (function() {
+      // 한글 조합 중인지 여부
+      var isComposing = false;
+
+      // 한글 조합 이벤트 핸들러 등록
+      document.addEventListener('compositionstart', function() {
+        isComposing = true;
+      }, true);
+
+      document.addEventListener('compositionend', function() {
+        isComposing = false;
+      }, true);
+
       function sendMessage(payload) {
+        // 한글 조합 중에는 메시지 전송 지연
+        if (isComposing) {
+          setTimeout(function() { sendMessage(payload); }, 100);
+          return;
+        }
         var msg = JSON.stringify(payload);
         try {
           window.ReactNativeWebView.postMessage(msg);
@@ -163,6 +187,12 @@ export default function AddressSearchModal({
     webViewRef.current?.reload();
   };
 
+  // WebView 프로세스 종료 시 자동 복구 (iOS 크래시 대응)
+  const handleContentProcessDidTerminate = () => {
+    console.log('[AddressSearchModal] WebView process terminated, reloading...');
+    webViewRef.current?.reload();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -203,6 +233,7 @@ export default function AddressSearchModal({
               onMessage={handleMessage}
               onLoadEnd={() => setLoading(false)}
               onError={() => setError(true)}
+              onContentProcessDidTerminate={handleContentProcessDidTerminate}
               style={[styles.webview, loading && styles.hidden]}
               javaScriptEnabled
               domStorageEnabled
@@ -210,7 +241,14 @@ export default function AddressSearchModal({
               mixedContentMode="always"
               allowsInlineMediaPlayback
               mediaPlaybackRequiresUserAction={false}
-              scalesPageToFit
+              // iOS 한글 입력 크래시 방지 설정
+              keyboardDisplayRequiresUserAction={false}
+              hideKeyboardAccessoryView={false}
+              allowsBackForwardNavigationGestures={false}
+              bounces={false}
+              automaticallyAdjustContentInsets={false}
+              textInteractionEnabled={true}
+              allowsLinkPreview={false}
             />
           </>
         )}

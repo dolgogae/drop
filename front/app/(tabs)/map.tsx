@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import axiosInstance from '../../utils/axiosInstance';
-import { gymEvents } from '../../utils/gymEvents';
+import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
 
 let MapView: any = null;
 let Marker: any = null;
@@ -31,21 +31,21 @@ type Region = {
   longitudeDelta: number;
 };
 
-interface Gym {
+interface CrossfitBox {
   id: number;
   name: string;
   location: string;
   phoneNumber: string;
   latitude: number;
   longitude: number;
-  isMyGym?: boolean;
+  isMyCrossfitBox?: boolean;
 }
 
 interface Cluster {
   id: string;
   latitude: number;
   longitude: number;
-  gyms: Gym[];
+  crossfitBoxes: CrossfitBox[];
   count: number;
 }
 
@@ -59,11 +59,11 @@ export default function MapScreen() {
   const { lat, lng, t } = useLocalSearchParams<{ lat?: string; lng?: string; t?: string }>();
   const mapRef = useRef<typeof MapView>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const [gyms, setGyms] = useState<Gym[]>([]);
-  const [myGymIds, setMyGymIds] = useState<Set<number>>(new Set());
+  const [crossfitBoxes, setCrossfitBoxes] = useState<CrossfitBox[]>([]);
+  const [myCrossfitBoxIds, setMyCrossfitBoxIds] = useState<Set<number>>(new Set());
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [addingGymId, setAddingGymId] = useState<number | null>(null);
+  const [addingCrossfitBoxId, setAddingCrossfitBoxId] = useState<number | null>(null);
 
   // 파라미터로 전달된 위치가 있으면 사용, 없으면 서울 기본값
   const initialLat = lat ? parseFloat(lat) : 37.5665;
@@ -77,8 +77,8 @@ export default function MapScreen() {
   });
 
   useEffect(() => {
-    fetchGymsByBounds(region, true);
-    fetchMyGyms();
+    fetchCrossfitBoxesByBounds(region, true);
+    fetchMyCrossfitBoxes();
 
     // 컴포넌트 언마운트 시 타이머 정리
     return () => {
@@ -101,47 +101,47 @@ export default function MapScreen() {
       };
       setRegion(newRegion);
       mapRef.current?.animateToRegion(newRegion, 300);
-      fetchGymsByBounds(newRegion, true);
+      fetchCrossfitBoxesByBounds(newRegion, true);
     }
   }, [lat, lng, t]);
 
-  // 체육관 변경 이벤트 구독 (홈에서 제거 시 동기화)
+  // 크로스핏박스 변경 이벤트 구독 (홈에서 제거 시 동기화)
   useEffect(() => {
-    const unsubscribe = gymEvents.subscribe(() => {
-      fetchMyGyms();
+    const unsubscribe = crossfitBoxEvents.subscribe(() => {
+      fetchMyCrossfitBoxes();
     });
     return unsubscribe;
   }, []);
 
   // 클러스터링을 useMemo로 최적화
   const clusters = useMemo(() => {
-    if (gyms.length === 0) return [];
+    if (crossfitBoxes.length === 0) return [];
 
     const clusterDistance = CLUSTER_DISTANCE * (region.latitudeDelta / 0.1);
     const clustered: Cluster[] = [];
     const used = new Set<number>();
 
-    gyms.forEach((gym, index) => {
+    crossfitBoxes.forEach((crossfitBox, index) => {
       if (used.has(index)) return;
 
       const cluster: Cluster = {
-        id: `cluster-${gym.id}`,
-        latitude: gym.latitude,
-        longitude: gym.longitude,
-        gyms: [gym],
+        id: `cluster-${crossfitBox.id}`,
+        latitude: crossfitBox.latitude,
+        longitude: crossfitBox.longitude,
+        crossfitBoxes: [crossfitBox],
         count: 1,
       };
 
-      gyms.forEach((otherGym, otherIndex) => {
+      crossfitBoxes.forEach((otherCrossfitBox, otherIndex) => {
         if (index === otherIndex || used.has(otherIndex)) return;
 
         const distance = Math.sqrt(
-          Math.pow(gym.latitude - otherGym.latitude, 2) +
-            Math.pow(gym.longitude - otherGym.longitude, 2)
+          Math.pow(crossfitBox.latitude - otherCrossfitBox.latitude, 2) +
+            Math.pow(crossfitBox.longitude - otherCrossfitBox.longitude, 2)
         );
 
         if (distance < clusterDistance) {
-          cluster.gyms.push(otherGym);
+          cluster.crossfitBoxes.push(otherCrossfitBox);
           cluster.count++;
           used.add(otherIndex);
         }
@@ -150,9 +150,9 @@ export default function MapScreen() {
       // 클러스터 중심 재계산
       if (cluster.count > 1) {
         cluster.latitude =
-          cluster.gyms.reduce((sum, g) => sum + g.latitude, 0) / cluster.count;
+          cluster.crossfitBoxes.reduce((sum, c) => sum + c.latitude, 0) / cluster.count;
         cluster.longitude =
-          cluster.gyms.reduce((sum, g) => sum + g.longitude, 0) / cluster.count;
+          cluster.crossfitBoxes.reduce((sum, c) => sum + c.longitude, 0) / cluster.count;
       }
 
       used.add(index);
@@ -160,9 +160,9 @@ export default function MapScreen() {
     });
 
     return clustered;
-  }, [gyms, region.latitudeDelta]);
+  }, [crossfitBoxes, region.latitudeDelta]);
 
-  const fetchGymsByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
+  const fetchCrossfitBoxesByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
     try {
       // 초기 로딩일 때만 로딩 인디케이터 표시
       if (isInitial) {
@@ -175,14 +175,14 @@ export default function MapScreen() {
       const neLat = currentRegion.latitude + currentRegion.latitudeDelta / 2;
       const neLng = currentRegion.longitude + currentRegion.longitudeDelta / 2;
 
-      const response = await axiosInstance.get('/gyms/map/bounds', {
+      const response = await axiosInstance.get('/crossfit-boxes/map/bounds', {
         params: { swLat, swLng, neLat, neLng },
       });
       if (response.data?.data) {
-        setGyms(response.data.data);
+        setCrossfitBoxes(response.data.data);
       }
     } catch (error) {
-      console.error('체육관 목록 조회 실패:', error);
+      console.error('크로스핏박스 목록 조회 실패:', error);
     } finally {
       if (isInitial) {
         setIsInitialLoad(false);
@@ -190,54 +190,54 @@ export default function MapScreen() {
     }
   }, []);
 
-  const fetchMyGyms = async () => {
+  const fetchMyCrossfitBoxes = async () => {
     try {
-      const response = await axiosInstance.get('/member-gym');
+      const response = await axiosInstance.get('/member-crossfit-box');
       if (response.data?.data) {
-        const ids = new Set<number>(response.data.data.map((g: any) => g.gymId));
-        setMyGymIds(ids);
+        const ids = new Set<number>(response.data.data.map((c: any) => c.crossfitBoxId));
+        setMyCrossfitBoxIds(ids);
       }
     } catch (error) {
-      console.error('내 체육관 목록 조회 실패:', error);
+      console.error('내 크로스핏박스 목록 조회 실패:', error);
     }
   };
 
-  const handleAddToMyGyms = async (gymId: number) => {
+  const handleAddToMyCrossfitBoxes = async (crossfitBoxId: number) => {
     try {
-      setAddingGymId(gymId);
-      await axiosInstance.post('/member-gym', { gymId, isFavorite: false });
-      setMyGymIds((prev) => new Set(prev).add(gymId));
-      gymEvents.emit();
-      Alert.alert('성공', '내 체육관에 추가되었습니다.');
+      setAddingCrossfitBoxId(crossfitBoxId);
+      await axiosInstance.post('/member-crossfit-box', { crossfitBoxId, isFavorite: false });
+      setMyCrossfitBoxIds((prev) => new Set(prev).add(crossfitBoxId));
+      crossfitBoxEvents.emit();
+      Alert.alert('성공', '내 크로스핏박스에 추가되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '추가에 실패했습니다.';
       Alert.alert('오류', message);
     } finally {
-      setAddingGymId(null);
+      setAddingCrossfitBoxId(null);
     }
   };
 
-  const handleRemoveFromMyGyms = async (gymId: number) => {
+  const handleRemoveFromMyCrossfitBoxes = async (crossfitBoxId: number) => {
     try {
-      setAddingGymId(gymId);
-      await axiosInstance.delete(`/member-gym/${gymId}`);
-      setMyGymIds((prev) => {
+      setAddingCrossfitBoxId(crossfitBoxId);
+      await axiosInstance.delete(`/member-crossfit-box/${crossfitBoxId}`);
+      setMyCrossfitBoxIds((prev) => {
         const next = new Set(prev);
-        next.delete(gymId);
+        next.delete(crossfitBoxId);
         return next;
       });
-      gymEvents.emit();
-      Alert.alert('성공', '내 체육관에서 제거되었습니다.');
+      crossfitBoxEvents.emit();
+      Alert.alert('성공', '내 크로스핏박스에서 제거되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '제거에 실패했습니다.';
       Alert.alert('오류', message);
     } finally {
-      setAddingGymId(null);
+      setAddingCrossfitBoxId(null);
     }
   };
 
   const handleClusterPress = (cluster: Cluster) => {
-    // 마커 클릭 시 바로 체육관 정보 표시
+    // 마커 클릭 시 바로 크로스핏박스 정보 표시
     setSelectedCluster(cluster);
   };
 
@@ -251,52 +251,52 @@ export default function MapScreen() {
 
     // 디바운스 적용: 지도 이동이 멈춘 후 일정 시간 후에 API 호출
     debounceRef.current = setTimeout(() => {
-      fetchGymsByBounds(newRegion);
+      fetchCrossfitBoxesByBounds(newRegion);
     }, DEBOUNCE_DELAY);
-  }, [fetchGymsByBounds]);
+  }, [fetchCrossfitBoxesByBounds]);
 
   const closeBottomSheet = () => {
     setSelectedCluster(null);
   };
 
-  const handleGymPress = (gymId: number) => {
-    router.push(`/gym/${gymId}` as any);
+  const handleCrossfitBoxPress = (crossfitBoxId: number) => {
+    router.push(`/crossfit-box/${crossfitBoxId}` as any);
   };
 
-  const renderGymItem = ({ item }: { item: Gym }) => {
-    const isMyGym = myGymIds.has(item.id);
-    const isProcessing = addingGymId === item.id;
+  const renderCrossfitBoxItem = ({ item }: { item: CrossfitBox }) => {
+    const isMyCrossfitBox = myCrossfitBoxIds.has(item.id);
+    const isProcessing = addingCrossfitBoxId === item.id;
 
     return (
-      <TouchableOpacity style={styles.gymItem} onPress={() => handleGymPress(item.id)} activeOpacity={0.7}>
-        <View style={styles.gymInfo}>
-          <Text style={styles.gymName}>{item.name}</Text>
-          <Text style={styles.gymLocation}>{item.location}</Text>
+      <TouchableOpacity style={styles.crossfitBoxItem} onPress={() => handleCrossfitBoxPress(item.id)} activeOpacity={0.7}>
+        <View style={styles.crossfitBoxInfo}>
+          <Text style={styles.crossfitBoxName}>{item.name}</Text>
+          <Text style={styles.crossfitBoxLocation}>{item.location}</Text>
           {item.phoneNumber && (
-            <Text style={styles.gymPhone}>{item.phoneNumber}</Text>
+            <Text style={styles.crossfitBoxPhone}>{item.phoneNumber}</Text>
           )}
         </View>
         <TouchableOpacity
           style={[
             styles.addButton,
-            isMyGym && styles.addButtonActive,
+            isMyCrossfitBox && styles.addButtonActive,
           ]}
           onPress={() =>
-            isMyGym ? handleRemoveFromMyGyms(item.id) : handleAddToMyGyms(item.id)
+            isMyCrossfitBox ? handleRemoveFromMyCrossfitBoxes(item.id) : handleAddToMyCrossfitBoxes(item.id)
           }
           disabled={isProcessing}
         >
           {isProcessing ? (
-            <ActivityIndicator size="small" color={isMyGym ? '#588157' : '#fff'} />
+            <ActivityIndicator size="small" color={isMyCrossfitBox ? '#588157' : '#fff'} />
           ) : (
             <>
               <Ionicons
-                name={isMyGym ? 'checkmark' : 'add'}
+                name={isMyCrossfitBox ? 'checkmark' : 'add'}
                 size={18}
-                color={isMyGym ? '#588157' : '#fff'}
+                color={isMyCrossfitBox ? '#588157' : '#fff'}
               />
-              <Text style={[styles.addButtonText, isMyGym && styles.addButtonTextActive]}>
-                {isMyGym ? '추가됨' : '추가'}
+              <Text style={[styles.addButtonText, isMyCrossfitBox && styles.addButtonTextActive]}>
+                {isMyCrossfitBox ? '추가됨' : '추가'}
               </Text>
             </>
           )}
@@ -314,18 +314,18 @@ export default function MapScreen() {
           <Text style={styles.webSubtitle}>
             지도 기능은 모바일 앱에서 이용 가능합니다.
           </Text>
-          <View style={styles.webGymList}>
-            <Text style={styles.webListTitle}>등록된 체육관 목록</Text>
+          <View style={styles.webCrossfitBoxList}>
+            <Text style={styles.webListTitle}>등록된 크로스핏박스 목록</Text>
             {isInitialLoad ? (
               <ActivityIndicator size="large" color="#588157" />
             ) : (
               <FlatList
-                data={gyms}
+                data={crossfitBoxes}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={renderGymItem}
-                style={styles.gymList}
+                renderItem={renderCrossfitBoxItem}
+                style={styles.crossfitBoxList}
                 ListEmptyComponent={
-                  <Text style={styles.emptyText}>등록된 체육관이 없습니다.</Text>
+                  <Text style={styles.emptyText}>등록된 크로스핏박스가 없습니다.</Text>
                 }
               />
             )}
@@ -387,18 +387,18 @@ export default function MapScreen() {
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetTitle}>
               {selectedCluster.count === 1
-                ? selectedCluster.gyms[0].name
-                : `주변 체육관 ${selectedCluster.count}개`}
+                ? selectedCluster.crossfitBoxes[0].name
+                : `주변 크로스핏박스 ${selectedCluster.count}개`}
             </Text>
             <TouchableOpacity onPress={closeBottomSheet}>
               <Text style={styles.closeButton}>닫기</Text>
             </TouchableOpacity>
           </View>
           <FlatList
-            data={selectedCluster.gyms}
+            data={selectedCluster.crossfitBoxes}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={renderGymItem}
-            style={styles.gymList}
+            renderItem={renderCrossfitBoxItem}
+            style={styles.crossfitBoxList}
           />
         </View>
       )}
@@ -489,31 +489,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#588157',
   },
-  gymList: {
+  crossfitBoxList: {
     paddingHorizontal: 16,
   },
-  gymItem: {
+  crossfitBoxItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  gymInfo: {
+  crossfitBoxInfo: {
     flex: 1,
   },
-  gymName: {
+  crossfitBoxName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#344E41',
     marginBottom: 4,
   },
-  gymLocation: {
+  crossfitBoxLocation: {
     fontSize: 14,
     color: '#666',
     marginBottom: 2,
   },
-  gymPhone: {
+  crossfitBoxPhone: {
     fontSize: 12,
     color: '#A3B18A',
   },
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 30,
   },
-  webGymList: {
+  webCrossfitBoxList: {
     flex: 1,
   },
   webListTitle: {

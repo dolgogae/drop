@@ -2,11 +2,11 @@ package com.drop.domain.auth.service;
 
 import com.drop.domain.auth.dto.UserCreateDto;
 import com.drop.domain.auth.dto.UserDto;
-import com.drop.domain.gym.data.Gym;
-import com.drop.domain.gym.dto.GymCreateDto;
-import com.drop.domain.gym.dto.GymDto;
-import com.drop.domain.gym.repository.GymRepository;
-import com.drop.domain.gym.service.GymService;
+import com.drop.domain.crossfitbox.data.CrossfitBox;
+import com.drop.domain.crossfitbox.dto.CrossfitBoxCreateDto;
+import com.drop.domain.crossfitbox.dto.CrossfitBoxDto;
+import com.drop.domain.crossfitbox.repository.CrossfitBoxRepository;
+import com.drop.domain.crossfitbox.service.CrossfitBoxService;
 import com.drop.domain.member.data.Member;
 import com.drop.domain.member.dto.MemberCreateDto;
 import com.drop.domain.member.dto.MemberDto;
@@ -33,9 +33,9 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticatableRepository authenticatableRepository;
     private final MemberRepository memberRepository;
-    private final GymRepository gymRepository;
+    private final CrossfitBoxRepository crossfitBoxRepository;
     private final MemberService memberService;
-    private final GymService gymService;
+    private final CrossfitBoxService crossfitBoxService;
 
     @Transactional
     public UserDto findUserAndUpdateTokens(Long id, UserRole role, String accessToken, String refreshToken) {
@@ -47,7 +47,7 @@ public class UserService {
         if (role == UserRole.MEMBER) {
             memberRepository.save((Member) user);
         } else if (role == UserRole.GYM) {
-            gymRepository.save((Gym) user);
+            crossfitBoxRepository.save((CrossfitBox) user);
         }
 
         return mapToUserDto(user);
@@ -71,9 +71,9 @@ public class UserService {
                 return ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedMember);
             }
             case GYM -> {
-                GymCreateDto gymCreateDto = userDtoConverter.toGymDto(userCreateDto);
-                GymDto savedGym = gymService.createGym(gymCreateDto);
-                return ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedGym);
+                CrossfitBoxCreateDto crossfitBoxCreateDto = userDtoConverter.toCrossfitBoxDto(userCreateDto);
+                CrossfitBoxDto savedCrossfitBox = crossfitBoxService.createCrossfitBox(crossfitBoxCreateDto);
+                return ResultResponse.of(ResultCode.REGISTER_SUCCESS, savedCrossfitBox);
             }
             default -> throw new BusinessException(ErrorCode.USER_ROLE_DOES_NOT_EXISTS);
         }

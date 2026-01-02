@@ -53,7 +53,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/v3/api-docs/**",
             "/auth/**", "/user/**",
-            "/gyms/**", "/home/**",
+            "/crossfit-boxes/**", "/home/**",
             "/image/**"};
 
     @Bean
