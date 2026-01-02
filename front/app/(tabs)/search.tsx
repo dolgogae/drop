@@ -1,21 +1,81 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import AddressInput from '../../components/AddressInput';
+import React, { useState, useEffect } from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import axiosInstance from '../../utils/axiosInstance';
 
-interface ValidAddressResult {
-  valid: boolean;
-  address: string;
-  roadAddress: string | null;
+interface GymResult {
+  id: number;
+  name: string;
+  phoneNumber: string | null;
+  address: {
+    addressLine1: string;
+    addressLine2: string | null;
+  } | null;
   latitude: number | null;
   longitude: number | null;
 }
 
 export default function SearchScreen() {
-  const [address, setAddress] = useState('');
-  const [validatedAddress, setValidatedAddress] = useState<ValidAddressResult | null>(null);
+  const router = useRouter();
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [gyms, setGyms] = useState<GymResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleValidAddress = (result: ValidAddressResult) => {
-    setValidatedAddress(result);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
+  useEffect(() => {
+    const searchGyms = async () => {
+      if (!debouncedKeyword.trim()) {
+        setGyms([]);
+        setHasSearched(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setHasSearched(true);
+
+      try {
+        const response = await axiosInstance.get('/gyms/search', {
+          params: { keyword: debouncedKeyword },
+        });
+        setGyms(response.data.data || []);
+      } catch (error) {
+        console.error('체육관 검색 실패:', error);
+        setGyms([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    searchGyms();
+  }, [debouncedKeyword]);
+
+  const clearSearch = () => {
+    setKeyword('');
+    setGyms([]);
+    setHasSearched(false);
+  };
+
+  const handleGymPress = (gymId: number) => {
+    router.push(`/gym/${gymId}`);
   };
 
   return (
@@ -23,38 +83,62 @@ export default function SearchScreen() {
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.title}>체육관 검색</Text>
-          <Text style={styles.subtitle}>주소를 입력하여 검색하세요</Text>
         </View>
 
         <View style={styles.inputSection}>
-          <Text style={styles.label}>주소</Text>
-          <AddressInput
-            value={address}
-            onChangeText={setAddress}
-            onValidAddress={handleValidAddress}
-            placeholder="예: 서울시 강남구 역삼동"
-          />
+          <View style={styles.inputContainer}>
+            <Ionicons name="search" size={20} color="#A3B18A" style={styles.searchIcon} />
+            <TextInput
+              style={styles.input}
+              value={keyword}
+              onChangeText={setKeyword}
+              placeholder="예: 클라이밍파크"
+              placeholderTextColor="#A3B18A"
+            />
+            {keyword.length > 0 && (
+              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                <Ionicons name="close-circle" size={20} color="#A3B18A" />
+              </TouchableOpacity>
+            )}
+            {isLoading && (
+              <ActivityIndicator size="small" color="#588157" style={styles.loadingIndicator} />
+            )}
+          </View>
         </View>
 
-        {validatedAddress && validatedAddress.valid && (
+        {hasSearched && !isLoading && (
           <View style={styles.resultSection}>
-            <Text style={styles.resultTitle}>검색 결과</Text>
-            <View style={styles.resultCard}>
-              <Text style={styles.resultLabel}>주소</Text>
-              <Text style={styles.resultValue}>{validatedAddress.address}</Text>
-
-              {validatedAddress.roadAddress && (
-                <>
-                  <Text style={styles.resultLabel}>도로명 주소</Text>
-                  <Text style={styles.resultValue}>{validatedAddress.roadAddress}</Text>
-                </>
-              )}
-
-              <Text style={styles.resultLabel}>좌표</Text>
-              <Text style={styles.resultValue}>
-                위도: {validatedAddress.latitude?.toFixed(6)}, 경도: {validatedAddress.longitude?.toFixed(6)}
-              </Text>
-            </View>
+            <Text style={styles.resultTitle}>
+              검색 결과 {gyms.length > 0 ? `(${gyms.length}개)` : ''}
+            </Text>
+            {gyms.length === 0 ? (
+              <View style={styles.emptyResult}>
+                <Ionicons name="search-outline" size={48} color="#A3B18A" />
+                <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
+              </View>
+            ) : (
+              gyms.map((gym) => (
+                <TouchableOpacity
+                  key={gym.id}
+                  style={styles.gymCard}
+                  onPress={() => handleGymPress(gym.id)}
+                >
+                  <View style={styles.gymInfo}>
+                    <Text style={styles.gymName}>{gym.name}</Text>
+                    {gym.address && (
+                      <Text style={styles.gymAddress}>
+                        {gym.address.addressLine1}
+                        {gym.address.addressLine2 ? ` ${gym.address.addressLine2}` : ''}
+                      </Text>
+                    )}
+                    {gym.phoneNumber && (
+                      <Text style={styles.gymPhone}>{gym.phoneNumber}</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#A3B18A" />
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         )}
       </ScrollView>
@@ -94,6 +178,30 @@ const styles = StyleSheet.create({
     color: '#344E41',
     marginBottom: 8,
   },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DAD7CD',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    height: 48,
+    fontSize: 16,
+    color: '#344E41',
+  },
+  clearButton: {
+    padding: 4,
+  },
+  loadingIndicator: {
+    marginLeft: 8,
+  },
   resultSection: {
     padding: 20,
     marginTop: 20,
@@ -104,19 +212,39 @@ const styles = StyleSheet.create({
     color: '#344E41',
     marginBottom: 12,
   },
-  resultCard: {
+  emptyResult: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#A3B18A',
+    marginTop: 12,
+  },
+  gymCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
   },
-  resultLabel: {
+  gymInfo: {
+    flex: 1,
+  },
+  gymName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#344E41',
+  },
+  gymAddress: {
+    fontSize: 14,
+    color: '#588157',
+    marginTop: 4,
+  },
+  gymPhone: {
     fontSize: 12,
     color: '#A3B18A',
-    marginTop: 8,
-  },
-  resultValue: {
-    fontSize: 14,
-    color: '#344E41',
     marginTop: 2,
   },
 });

@@ -94,7 +94,6 @@ export default function LoginScreen() {
           accessToken,
           refreshToken,
         }));
-        Alert.alert(t('auth.loginSuccess'));
         router.replace('/');
       } else {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
@@ -132,7 +131,6 @@ export default function LoginScreen() {
             accessToken,
             refreshToken,
           }));
-          Alert.alert(t('auth.loginSuccess'));
           router.replace('/');
         } else {
           Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));

@@ -25,6 +25,15 @@ public class GymController {
 
     private final GymService gymService;
 
+    @Operation(summary = "체육관 이름 검색", description = "체육관 이름으로 검색합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<ResultResponse> searchGyms(
+            @Parameter(description = "검색 키워드") @RequestParam String keyword
+    ) {
+        List<GymDto> gyms = gymService.searchByName(keyword);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.GYM_LIST_SUCCESS, gyms));
+    }
+
     @Operation(summary = "전체 체육관 목록 조회 (지도용)", description = "위치 정보가 있는 모든 체육관을 조회합니다.")
     @GetMapping("/map")
     public ResponseEntity<ResultResponse> getAllGymsForMap() {
