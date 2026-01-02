@@ -58,6 +58,16 @@ public class GymService {
         return gymMapper.toDto(gym);
     }
 
+    @Transactional(readOnly = true)
+    public List<GymDto> searchByName(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return gymRepository.searchByName(keyword.trim()).stream()
+                .map(gymMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     private static final double DEFAULT_RADIUS_KM = 5.0;
 
     @Transactional(readOnly = true)

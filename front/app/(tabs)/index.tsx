@@ -46,6 +46,7 @@ export default function HomeScreen() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
 
   // 위치 권한 확인 및 요청
   const checkLocationPermission = useCallback(async () => {
@@ -89,6 +90,30 @@ export default function HomeScreen() {
       const lng = snapToGrid(location.coords.longitude);
 
       setCurrentLocation({ lat, lng });
+
+      // 좌표를 주소로 변환
+      try {
+        const [address] = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        if (address) {
+          // 한국 주소: region(시/도), subregion(구), district(동)
+          let displayAddress = '';
+          if (address.region) {
+            const region = address.region.replace(/특별시|광역시|도$/g, '');
+            // subregion(구) 또는 district(동) 사용
+            const detail = address.subregion || address.district || '';
+            displayAddress = detail ? `${region} ${detail}` : region;
+          } else if (address.city) {
+            displayAddress = address.district ? `${address.city} ${address.district}` : address.city;
+          }
+          setCurrentAddress(displayAddress || null);
+        }
+      } catch (geocodeError) {
+        console.error('주소 변환 실패:', geocodeError);
+      }
+
       return { lat, lng };
     } catch (error) {
       console.error('위치 가져오기 실패:', error);
@@ -238,7 +263,31 @@ export default function HomeScreen() {
   }, [currentLocation]);
 
   const handleGoToMap = () => {
-    router.push('/(tabs)/map');
+    if (currentLocation) {
+      router.push({
+        pathname: '/(tabs)/map',
+        params: {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          t: Date.now(),
+        },
+      });
+    } else {
+      router.push('/(tabs)/map');
+    }
+  };
+
+  const handleGoToNearbyGyms = () => {
+    if (currentLocation) {
+      router.push({
+        pathname: '/nearby-gyms',
+        params: {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          address: currentAddress || '',
+        },
+      } as any);
+    }
   };
 
   const handleGoToMyGyms = () => {
@@ -398,16 +447,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </ScrollView>
-
-        {/* FAB */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleGoToMap}
-          accessibilityLabel="지도에서 체육관 추가"
-          accessibilityRole="button"
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -423,16 +462,6 @@ export default function HomeScreen() {
             <Text style={styles.retryButtonText}>다시 시도</Text>
           </TouchableOpacity>
         </View>
-
-        {/* FAB */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleGoToMap}
-          accessibilityLabel="지도에서 체육관 추가"
-          accessibilityRole="button"
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -443,26 +472,29 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* 근처 요약 카드 */}
-        <TouchableOpacity
-          style={styles.summaryCard}
-          onPress={handleGoToMap}
-          activeOpacity={0.8}
-          accessibilityLabel={`근처 체육관 ${summary?.nearbyGymCount || 0}개`}
-          accessibilityRole="button"
-        >
-          <Text style={styles.summaryTitle}>
-            근처 체육관 <Text style={styles.summaryCount}>{summary?.nearbyGymCount || 0}</Text>개
-          </Text>
-          <Text style={styles.summarySubtitle}>
-            {summary?.nearbyBasis === LocationMode.CURRENT
-              ? LocationModeText[LocationMode.CURRENT]
-              : '전체 체육관'}
-          </Text>
+        <View style={styles.summaryCard}>
+          <TouchableOpacity
+            onPress={handleGoToNearbyGyms}
+            activeOpacity={0.7}
+            accessibilityLabel={`근처 체육관 ${summary?.nearbyGymCount || 0}개`}
+            accessibilityRole="button"
+            disabled={!currentLocation}
+          >
+            <Text style={styles.summaryTitle}>
+              근처 체육관 <Text style={styles.summaryCount}>{summary?.nearbyGymCount || 0}</Text>개
+            </Text>
+          </TouchableOpacity>
+          {currentAddress && (
+            <View style={styles.locationBadge}>
+              <Ionicons name="location" size={12} color="#588157" />
+              <Text style={styles.locationBadgeText}>{currentAddress}</Text>
+            </View>
+          )}
           <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
             <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
             <Text style={styles.mapButtonText}>지도에서 보기</Text>
           </TouchableOpacity>
-        </TouchableOpacity>
+        </View>
 
         {/* 내 체육관 섹션 */}
         <View style={styles.sectionHeader}>
@@ -561,16 +593,6 @@ export default function HomeScreen() {
           </ScrollView>
         )}
       </ScrollView>
-
-      {/* FAB - 지도에서 체육관 추가 */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleGoToMap}
-        accessibilityLabel="지도에서 체육관 추가"
-        accessibilityRole="button"
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -620,6 +642,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A3B18A',
     marginTop: 4,
+  },
+  locationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  locationBadgeText: {
+    fontSize: 12,
+    color: '#588157',
+    marginLeft: 4,
+    fontWeight: '500',
   },
   mapButton: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -56,6 +56,7 @@ const DEBOUNCE_DELAY = 300; // 디바운스 딜레이 (ms)
 
 export default function MapScreen() {
   const router = useRouter();
+  const { lat, lng, t } = useLocalSearchParams<{ lat?: string; lng?: string; t?: string }>();
   const mapRef = useRef<typeof MapView>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [gyms, setGyms] = useState<Gym[]>([]);
@@ -63,11 +64,16 @@ export default function MapScreen() {
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [addingGymId, setAddingGymId] = useState<number | null>(null);
+
+  // 파라미터로 전달된 위치가 있으면 사용, 없으면 서울 기본값
+  const initialLat = lat ? parseFloat(lat) : 37.5665;
+  const initialLng = lng ? parseFloat(lng) : 126.978;
+
   const [region, setRegion] = useState<Region>({
-    latitude: 37.5665,
-    longitude: 126.978,
-    latitudeDelta: 0.1,
-    longitudeDelta: 0.1,
+    latitude: initialLat,
+    longitude: initialLng,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
   });
 
   useEffect(() => {
@@ -81,6 +87,23 @@ export default function MapScreen() {
       }
     };
   }, []);
+
+  // 파라미터로 위치가 전달되면 해당 위치로 이동
+  useEffect(() => {
+    if (lat && lng) {
+      const newLat = parseFloat(lat);
+      const newLng = parseFloat(lng);
+      const newRegion = {
+        latitude: newLat,
+        longitude: newLng,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+      setRegion(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 300);
+      fetchGymsByBounds(newRegion, true);
+    }
+  }, [lat, lng, t]);
 
   // 체육관 변경 이벤트 구독 (홈에서 제거 시 동기화)
   useEffect(() => {
@@ -329,6 +352,8 @@ export default function MapScreen() {
           style={styles.map}
           initialRegion={region}
           onRegionChangeComplete={handleRegionChangeComplete}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
         >
           {clusters.map((cluster) => (
             <Marker

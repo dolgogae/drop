@@ -24,4 +24,7 @@ public interface GymRepository extends JpaRepository<Gym, Long> {
                            @Param("swLng") Double swLng,
                            @Param("neLat") Double neLat,
                            @Param("neLng") Double neLng);
+
+    @Query("SELECT g FROM Gym g WHERE LOWER(REPLACE(g.name, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))")
+    List<Gym> searchByName(@Param("keyword") String keyword);
 }
