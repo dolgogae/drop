@@ -38,7 +38,6 @@ const createPostcodeHtml = () => `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; -webkit-text-size-adjust: none; }
     #wrap { width: 100%; height: 100%; }
-    /* 한글 입력 안정화를 위한 스타일 */
     input, textarea {
       -webkit-user-select: text;
       user-select: text;
@@ -52,29 +51,11 @@ const createPostcodeHtml = () => `
   <script src="${POSTCODE_URL}"><\/script>
   <script>
     (function() {
-      // 한글 조합 중인지 여부
-      var isComposing = false;
-
-      // 한글 조합 이벤트 핸들러 등록
-      document.addEventListener('compositionstart', function() {
-        isComposing = true;
-      }, true);
-
-      document.addEventListener('compositionend', function() {
-        isComposing = false;
-      }, true);
-
       function sendMessage(payload) {
-        // 한글 조합 중에는 메시지 전송 지연
-        if (isComposing) {
-          setTimeout(function() { sendMessage(payload); }, 100);
-          return;
-        }
-        var msg = JSON.stringify(payload);
         try {
-          window.ReactNativeWebView.postMessage(msg);
+          window.ReactNativeWebView.postMessage(JSON.stringify(payload));
         } catch (e) {
-          console.error('postMessage failed:', e);
+          console.error('postMessage failed', e);
         }
       }
 
@@ -132,8 +113,6 @@ export default function AddressSearchModal({
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
       const raw = event.nativeEvent.data;
-      console.log('[AddressSearchModal] WebView message:', raw);
-
       const msg: unknown = JSON.parse(raw);
 
       if (typeof msg !== 'object' || msg === null) {
@@ -142,6 +121,35 @@ export default function AddressSearchModal({
 
       const data = msg as Record<string, unknown>;
       const type = typeof data.type === 'string' ? data.type : '';
+
+      // WebView 로그 처리
+      if (type === 'LOG') {
+        const level = data.level as string;
+        const message = data.message as string;
+        const logData = data.data;
+        const timestamp = data.timestamp as string;
+
+        const logPrefix = `[AddressSearchModal:${level}] ${timestamp}`;
+        switch (level) {
+          case 'ERROR':
+            console.error(logPrefix, message, logData);
+            break;
+          case 'WARN':
+            console.warn(logPrefix, message, logData);
+            break;
+          case 'INFO':
+            console.info(logPrefix, message, logData);
+            break;
+          case 'DEBUG':
+            console.log(logPrefix, message, logData);
+            break;
+          default:
+            console.log(logPrefix, message, logData);
+        }
+        return;
+      }
+
+      console.log('[AddressSearchModal] WebView message:', type);
 
       if (type === 'CLOSE') {
         handleClose();
@@ -231,9 +239,21 @@ export default function AddressSearchModal({
                 baseUrl: 'https://postcode.map.daum.net',
               }}
               onMessage={handleMessage}
-              onLoadEnd={() => setLoading(false)}
-              onError={() => setError(true)}
+              onLoadEnd={() => {
+                setLoading(false);
+                console.log('[AddressSearchModal] WebView loaded');
+              }}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('[AddressSearchModal] WebView error:', nativeEvent);
+                setError(true);
+              }}
               onContentProcessDidTerminate={handleContentProcessDidTerminate}
+              onRenderProcessGone={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('[AddressSearchModal] WebView render process gone:', nativeEvent);
+                webViewRef.current?.reload();
+              }}
               style={[styles.webview, loading && styles.hidden]}
               javaScriptEnabled
               domStorageEnabled
@@ -247,8 +267,17 @@ export default function AddressSearchModal({
               allowsBackForwardNavigationGestures={false}
               bounces={false}
               automaticallyAdjustContentInsets={false}
-              textInteractionEnabled={true}
               allowsLinkPreview={false}
+              // 추가 iOS 안정화 설정
+              scrollEnabled={true}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              contentInsetAdjustmentBehavior="never"
+              // iOS WebView 안정성 설정
+              // incognito={true}  // 한글 IME 크래시 유발 - 비활성화
+              cacheEnabled={false}
+              // 하드웨어 가속 사용
+              androidLayerType="hardware"
             />
           </>
         )}
