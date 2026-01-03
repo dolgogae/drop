@@ -100,7 +100,7 @@ export default function NearbyCrossfitBoxesScreen() {
       await axiosInstance.post('/member-crossfit-box', { crossfitBoxId, isFavorite: false });
       setMyCrossfitBoxIds((prev) => new Set(prev).add(crossfitBoxId));
       crossfitBoxEvents.emit();
-      Alert.alert('성공', '내 크로스핏박스에 추가되었습니다.');
+      Alert.alert('성공', '내 Box에 추가되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '추가에 실패했습니다.';
       Alert.alert('오류', message);
@@ -119,7 +119,7 @@ export default function NearbyCrossfitBoxesScreen() {
         return next;
       });
       crossfitBoxEvents.emit();
-      Alert.alert('성공', '내 크로스핏박스에서 제거되었습니다.');
+      Alert.alert('성공', '내 Box에서 제거되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '제거에 실패했습니다.';
       Alert.alert('오류', message);
@@ -137,7 +137,7 @@ export default function NearbyCrossfitBoxesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#588157" />
-          <Text style={styles.loadingText}>근처 크로스핏박스를 찾는 중...</Text>
+          <Text style={styles.loadingText}>근처 Box를 찾는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -150,7 +150,7 @@ export default function NearbyCrossfitBoxesScreen() {
           <Ionicons name="arrow-back" size={24} color="#344E41" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>근처 크로스핏박스</Text>
+          <Text style={styles.headerTitle}>근처 Box</Text>
           {address && <Text style={styles.headerSubtitle}>{address}</Text>}
         </View>
       </View>
@@ -159,11 +159,11 @@ export default function NearbyCrossfitBoxesScreen() {
         {crossfitBoxes.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="fitness-outline" size={64} color="#A3B18A" />
-            <Text style={styles.emptyText}>근처에 크로스핏박스가 없습니다</Text>
+            <Text style={styles.emptyText}>근처에 Box가 없습니다</Text>
           </View>
         ) : (
           <>
-            <Text style={styles.resultCount}>{crossfitBoxes.length}개의 크로스핏박스</Text>
+            <Text style={styles.resultCount}>{crossfitBoxes.length}개의 Box</Text>
             {crossfitBoxes.map((crossfitBox) => {
               const isMyCrossfitBox = myCrossfitBoxIds.has(crossfitBox.id);
               const isProcessing = addingCrossfitBoxId === crossfitBox.id;

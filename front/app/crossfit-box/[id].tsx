@@ -61,7 +61,7 @@ export default function CrossfitBoxDetailScreen() {
       }
     } catch (err: any) {
       console.error('크로스핏박스 상세 조회 실패:', err);
-      setError('크로스핏박스 정보를 불러올 수 없습니다.');
+      setError('Box 정보를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ export default function CrossfitBoxDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#344E41" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>크로스핏박스 정보</Text>
+          <Text style={styles.headerTitle}>Box 정보</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
@@ -133,12 +133,12 @@ export default function CrossfitBoxDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#344E41" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>크로스핏박스 정보</Text>
+          <Text style={styles.headerTitle}>Box 정보</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#A3B18A" />
-          <Text style={styles.errorText}>{error || '크로스핏박스를 찾을 수 없습니다.'}</Text>
+          <Text style={styles.errorText}>{error || 'Box를 찾을 수 없습니다.'}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchCrossfitBoxDetail}>
             <Text style={styles.retryButtonText}>다시 시도</Text>
           </TouchableOpacity>

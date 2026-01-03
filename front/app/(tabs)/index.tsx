@@ -420,7 +420,7 @@ export default function HomeScreen() {
             <Ionicons name="location-outline" size={48} color="#588157" />
             <Text style={styles.permissionTitle}>위치 권한이 필요해요</Text>
             <Text style={styles.permissionDescription}>
-              근처 크로스핏박스를 찾으려면 위치 권한이 필요합니다.
+              근처 Box를 찾으려면 위치 권한이 필요합니다.
               {'\n'}권한을 허용하시거나 주소로 검색해보세요.
             </Text>
 
@@ -476,12 +476,12 @@ export default function HomeScreen() {
           <TouchableOpacity
             onPress={handleGoToNearbyCrossfitBoxes}
             activeOpacity={0.7}
-            accessibilityLabel={`근처 크로스핏박스 ${summary?.nearbyCrossfitBoxCount || 0}개`}
+            accessibilityLabel={`근처 Box ${summary?.nearbyCrossfitBoxCount || 0}개`}
             accessibilityRole="button"
             disabled={!currentLocation}
           >
             <Text style={styles.summaryTitle}>
-              근처 크로스핏박스 <Text style={styles.summaryCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
+              근처 Box <Text style={styles.summaryCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
             </Text>
           </TouchableOpacity>
           {currentAddress && (
@@ -510,7 +510,7 @@ export default function HomeScreen() {
           // 빈 상태
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={48} color="#A3B18A" />
-            <Text style={styles.emptyText}>아직 등록된 크로스핏박스가 없어요</Text>
+            <Text style={styles.emptyText}>아직 등록된 Box가 없어요</Text>
             <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleGoToMap}>
               <Ionicons name="map-outline" size={20} color="#fff" />
               <Text style={styles.emptyRegisterButtonText}>지도에서 추가하기</Text>
@@ -585,7 +585,7 @@ export default function HomeScreen() {
                     ]}
                     numberOfLines={2}
                   >
-                    {crossfitBox.isDeleted ? '없어진 크로스핏박스' : crossfitBox.name}
+                    {crossfitBox.isDeleted ? '없어진 Box' : crossfitBox.name}
                   </Text>
                 </View>
               </TouchableOpacity>
