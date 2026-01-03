@@ -1,7 +1,7 @@
 package com.drop.domain.auth.service;
 
 import com.drop.domain.auth.dto.UserCreateDto;
-import com.drop.domain.gym.dto.GymCreateDto;
+import com.drop.domain.crossfitbox.dto.CrossfitBoxCreateDto;
 import com.drop.domain.member.dto.MemberCreateDto;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,7 @@ public class UserDtoConverter {
         return toDto(userCreateDto, MemberCreateDto::new);
     }
 
-    public GymCreateDto toGymDto(UserCreateDto userCreateDto) {
-        return toDto(userCreateDto, GymCreateDto::new);
+    public CrossfitBoxCreateDto toCrossfitBoxDto(UserCreateDto userCreateDto) {
+        return toDto(userCreateDto, CrossfitBoxCreateDto::new);
     }
 }

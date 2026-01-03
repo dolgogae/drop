@@ -58,8 +58,8 @@ const translations: Record<Language, Record<string, string>> = {
     'role.title': '회원 유형 선택',
     'role.member': '일반 회원',
     'role.memberDesc': '트레이닝을 받고 싶은 회원',
-    'role.gym': '체육관',
-    'role.gymDesc': '체육관 운영자',
+    'role.crossfitBox': '크로스핏박스',
+    'role.crossfitBoxDesc': '크로스핏박스 운영자',
 
     // Basic Info
     'info.basic': '기본 정보',
@@ -69,17 +69,17 @@ const translations: Record<Language, Record<string, string>> = {
     'member.title': '일반 회원 가입',
     'member.additionalInfo': '추가 정보',
 
-    // Gym
-    'gym.title': '체육관 가입',
-    'gym.info': '체육관 정보',
-    'gym.name': '체육관 이름',
-    'gym.phoneNumber': '전화번호',
-    'gym.etcInfo': '기타 정보 (근처 역 등)',
-    'gym.facilityInfo': '시설 정보',
-    'gym.parking': '주차 가능',
-    'gym.wear': '운동복 대여',
-    'gym.locker': '락커 제공',
-    'gym.requiredFields': '체육관 이름, 주소, 전화번호는 필수입니다.',
+    // CrossfitBox
+    'crossfitBox.title': '크로스핏박스 가입',
+    'crossfitBox.info': '크로스핏박스 정보',
+    'crossfitBox.name': '크로스핏박스 이름',
+    'crossfitBox.phoneNumber': '전화번호',
+    'crossfitBox.etcInfo': '기타 정보 (근처 역 등)',
+    'crossfitBox.facilityInfo': '시설 정보',
+    'crossfitBox.parking': '주차 가능',
+    'crossfitBox.wear': '운동복 대여',
+    'crossfitBox.locker': '락커 제공',
+    'crossfitBox.requiredFields': '크로스핏박스 이름, 주소, 전화번호는 필수입니다.',
 
     // Address
     'address.title': '주소',
@@ -171,8 +171,8 @@ const translations: Record<Language, Record<string, string>> = {
     'role.title': 'Select User Type',
     'role.member': 'Member',
     'role.memberDesc': 'Looking for training',
-    'role.gym': 'Gym',
-    'role.gymDesc': 'Gym operator',
+    'role.crossfitBox': 'CrossFit Box',
+    'role.crossfitBoxDesc': 'CrossFit Box operator',
 
     // Basic Info
     'info.basic': 'Basic Information',
@@ -182,17 +182,17 @@ const translations: Record<Language, Record<string, string>> = {
     'member.title': 'Member Registration',
     'member.additionalInfo': 'Additional Information',
 
-    // Gym
-    'gym.title': 'Gym Registration',
-    'gym.info': 'Gym Information',
-    'gym.name': 'Gym Name',
-    'gym.phoneNumber': 'Phone Number',
-    'gym.etcInfo': 'Other Info (nearby stations, etc.)',
-    'gym.facilityInfo': 'Facility Information',
-    'gym.parking': 'Parking Available',
-    'gym.wear': 'Workout Clothes Rental',
-    'gym.locker': 'Locker Available',
-    'gym.requiredFields': 'Gym name, address, and phone number are required.',
+    // CrossfitBox
+    'crossfitBox.title': 'CrossFit Box Registration',
+    'crossfitBox.info': 'CrossFit Box Information',
+    'crossfitBox.name': 'CrossFit Box Name',
+    'crossfitBox.phoneNumber': 'Phone Number',
+    'crossfitBox.etcInfo': 'Other Info (nearby stations, etc.)',
+    'crossfitBox.facilityInfo': 'Facility Information',
+    'crossfitBox.parking': 'Parking Available',
+    'crossfitBox.wear': 'Workout Clothes Rental',
+    'crossfitBox.locker': 'Locker Available',
+    'crossfitBox.requiredFields': 'CrossFit Box name, address, and phone number are required.',
 
     // Address
     'address.title': 'Address',

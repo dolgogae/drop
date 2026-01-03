@@ -11,7 +11,7 @@ import {
 import { useI18n } from '../../contexts/i18n';
 import styles from './styles';
 
-type UserRole = 'MEMBER' | 'GYM';
+type UserRole = 'MEMBER' | 'CROSSFIT_BOX';
 
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,7 +51,7 @@ export default function RegisterScreen() {
 
   const roles: { key: UserRole; labelKey: string; descKey: string }[] = [
     { key: 'MEMBER', labelKey: 'role.member', descKey: 'role.memberDesc' },
-    { key: 'GYM', labelKey: 'role.gym', descKey: 'role.gymDesc' },
+    { key: 'CROSSFIT_BOX', labelKey: 'role.crossfitBox', descKey: 'role.crossfitBoxDesc' },
   ];
 
   const handleNext = () => {
@@ -85,9 +85,9 @@ export default function RegisterScreen() {
           params: baseInfo,
         });
         break;
-      case 'GYM':
+      case 'CROSSFIT_BOX':
         router.push({
-          pathname: '/register/gym',
+          pathname: '/register/crossfit-box',
           params: baseInfo,
         });
         break;

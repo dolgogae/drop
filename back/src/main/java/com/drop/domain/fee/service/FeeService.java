@@ -1,13 +1,13 @@
 package com.drop.domain.fee.service;
 
-import com.drop.domain.fee.data.GymFee;
-import com.drop.domain.fee.dto.GymFeeDto;
-import com.drop.domain.fee.dto.GymFeeCreateDto;
-import com.drop.domain.fee.dto.GymFeeUpdateDto;
-import com.drop.domain.fee.mapper.GymFeeMapper;
-import com.drop.domain.fee.repository.GymFeeRepository;
-import com.drop.domain.gym.data.Gym;
-import com.drop.domain.gym.repository.GymRepository;
+import com.drop.domain.fee.data.CrossfitBoxFee;
+import com.drop.domain.fee.dto.CrossfitBoxFeeDto;
+import com.drop.domain.fee.dto.CrossfitBoxFeeCreateDto;
+import com.drop.domain.fee.dto.CrossfitBoxFeeUpdateDto;
+import com.drop.domain.fee.mapper.CrossfitBoxFeeMapper;
+import com.drop.domain.fee.repository.CrossfitBoxFeeRepository;
+import com.drop.domain.crossfitbox.data.CrossfitBox;
+import com.drop.domain.crossfitbox.repository.CrossfitBoxRepository;
 import com.drop.domain.auth.service.UserService;
 import com.drop.global.code.error.ErrorCode;
 import com.drop.global.code.error.exception.BusinessException;
@@ -18,38 +18,38 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class FeeService {
-    private final GymFeeRepository gymFeeRepository;
-    private final GymRepository gymRepository;
+    private final CrossfitBoxFeeRepository crossfitBoxFeeRepository;
+    private final CrossfitBoxRepository crossfitBoxRepository;
     private final UserService userService;
-    private final GymFeeMapper gymFeeMapper;
+    private final CrossfitBoxFeeMapper crossfitBoxFeeMapper;
 
     @Transactional
-    public GymFeeDto createGymFee(GymFeeCreateDto gymFeeCreateDto){
-        Long userId = userService.getUserId(gymFeeCreateDto.getToken());
-        Gym gym = gymRepository.findById(userId).orElseThrow(() ->
+    public CrossfitBoxFeeDto createCrossfitBoxFee(CrossfitBoxFeeCreateDto crossfitBoxFeeCreateDto){
+        Long userId = userService.getUserId(crossfitBoxFeeCreateDto.getToken());
+        CrossfitBox crossfitBox = crossfitBoxRepository.findById(userId).orElseThrow(() ->
             new BusinessException(ErrorCode.USER_NOT_EXIST));
 
-        GymFee gymFee = GymFee.create(gymFeeCreateDto, gym);
+        CrossfitBoxFee crossfitBoxFee = CrossfitBoxFee.create(crossfitBoxFeeCreateDto, crossfitBox);
 
-        GymFee savedGymFee = gymFeeRepository.save(gymFee);
+        CrossfitBoxFee savedCrossfitBoxFee = crossfitBoxFeeRepository.save(crossfitBoxFee);
 
-        return gymFeeMapper.toDto(savedGymFee);
+        return crossfitBoxFeeMapper.toDto(savedCrossfitBoxFee);
     }
 
     @Transactional
-    public GymFeeDto updateFee(GymFeeUpdateDto gymFeeUpdateDto){
-        GymFee gymFee = gymFeeRepository.findById(gymFeeUpdateDto.getFeeId()).orElseThrow(() ->
+    public CrossfitBoxFeeDto updateFee(CrossfitBoxFeeUpdateDto crossfitBoxFeeUpdateDto){
+        CrossfitBoxFee crossfitBoxFee = crossfitBoxFeeRepository.findById(crossfitBoxFeeUpdateDto.getFeeId()).orElseThrow(() ->
                 new BusinessException(ErrorCode.USER_NOT_EXIST));
-        gymFee.updateFee(gymFeeUpdateDto);
-        GymFee savedGymFee = gymFeeRepository.save(gymFee);
+        crossfitBoxFee.updateFee(crossfitBoxFeeUpdateDto);
+        CrossfitBoxFee savedCrossfitBoxFee = crossfitBoxFeeRepository.save(crossfitBoxFee);
 
-        return gymFeeMapper.toDto(savedGymFee);
+        return crossfitBoxFeeMapper.toDto(savedCrossfitBoxFee);
     }
 
-    public GymFeeDto getGymFee(Long id) {
-        GymFee gymFee = gymFeeRepository.findById(id).orElseThrow(() ->
+    public CrossfitBoxFeeDto getCrossfitBoxFee(Long id) {
+        CrossfitBoxFee crossfitBoxFee = crossfitBoxFeeRepository.findById(id).orElseThrow(() ->
                 new BusinessException(ErrorCode.NOT_FOUND_FEE));
 
-        return gymFeeMapper.toDto(gymFee);
+        return crossfitBoxFeeMapper.toDto(crossfitBoxFee);
     }
 }

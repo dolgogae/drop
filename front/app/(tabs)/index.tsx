@@ -18,10 +18,10 @@ import {
 } from 'react-native';
 import { HomeState, LocationMode, LocationModeText } from '../../constants/enums';
 import axiosInstance from '../../utils/axiosInstance';
-import { gymEvents } from '../../utils/gymEvents';
+import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
 
-interface MyGymPreview {
-  gymId: number;
+interface MyCrossfitBoxPreview {
+  crossfitBoxId: number;
   name: string;
   isFavorite: boolean;
   isDeleted: boolean;
@@ -29,10 +29,10 @@ interface MyGymPreview {
 }
 
 interface HomeSummary {
-  nearbyGymCount: number;
+  nearbyCrossfitBoxCount: number;
   nearbyBasis: LocationMode;
-  myGymsPreview: MyGymPreview[];
-  hasMoreMyGyms: boolean;
+  myCrossfitBoxesPreview: MyCrossfitBoxPreview[];
+  hasMoreMyCrossfitBoxes: boolean;
 }
 
 const snapToGrid = (value: number, gridSize: number = 0.005): number => {
@@ -239,9 +239,9 @@ export default function HomeScreen() {
     return () => subscription.remove();
   }, [fetchHomeSummary, checkLocationPermission, getCurrentLocation]);
 
-  // 체육관 변경 이벤트 구독 (맵에서 추가/제거 시 동기화)
+  // 크로스핏박스 변경 이벤트 구독 (맵에서 추가/제거 시 동기화)
   useEffect(() => {
-    const refreshGyms = async () => {
+    const refreshCrossfitBoxes = async () => {
       try {
         const params: Record<string, any> = {};
         if (currentLocation) {
@@ -254,11 +254,11 @@ export default function HomeScreen() {
           setSummary(response.data.data);
         }
       } catch (error) {
-        console.error('체육관 데이터 갱신 실패:', error);
+        console.error('크로스핏박스 데이터 갱신 실패:', error);
       }
     };
 
-    const unsubscribe = gymEvents.subscribe(refreshGyms);
+    const unsubscribe = crossfitBoxEvents.subscribe(refreshCrossfitBoxes);
     return unsubscribe;
   }, [currentLocation]);
 
@@ -277,10 +277,10 @@ export default function HomeScreen() {
     }
   };
 
-  const handleGoToNearbyGyms = () => {
+  const handleGoToNearbyCrossfitBoxes = () => {
     if (currentLocation) {
       router.push({
-        pathname: '/nearby-gyms',
+        pathname: '/nearby-crossfit-boxes',
         params: {
           lat: currentLocation.lat,
           lng: currentLocation.lng,
@@ -290,40 +290,40 @@ export default function HomeScreen() {
     }
   };
 
-  const handleGoToMyGyms = () => {
-    router.push('/my-gyms' as any);
+  const handleGoToMyCrossfitBoxes = () => {
+    router.push('/my-crossfit-boxes' as any);
   };
 
-  const handleGymPress = (gym: MyGymPreview) => {
-    if (gym.isDeleted) {
+  const handleCrossfitBoxPress = (crossfitBox: MyCrossfitBoxPreview) => {
+    if (crossfitBox.isDeleted) {
       return;
     }
-    router.push(`/gym/${gym.gymId}` as any);
+    router.push(`/crossfit-box/${crossfitBox.crossfitBoxId}` as any);
   };
 
   // 즐겨찾기 토글
-  const handleToggleFavorite = async (gymId: number) => {
+  const handleToggleFavorite = async (crossfitBoxId: number) => {
     if (!summary) return;
 
     // 로딩 상태 설정
     setSummary({
       ...summary,
-      myGymsPreview: summary.myGymsPreview.map((g) =>
-        g.gymId === gymId ? { ...g, togglingFavorite: true } : g
+      myCrossfitBoxesPreview: summary.myCrossfitBoxesPreview.map((c) =>
+        c.crossfitBoxId === crossfitBoxId ? { ...c, togglingFavorite: true } : c
       ),
     });
 
     try {
-      const response = await axiosInstance.patch(`/member-gym/${gymId}/favorite`);
+      const response = await axiosInstance.patch(`/member-crossfit-box/${crossfitBoxId}/favorite`);
       if (response.data?.data) {
         setSummary((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            myGymsPreview: prev.myGymsPreview.map((g) =>
-              g.gymId === gymId
-                ? { ...g, isFavorite: response.data.data.isFavorite, togglingFavorite: false }
-                : g
+            myCrossfitBoxesPreview: prev.myCrossfitBoxesPreview.map((c) =>
+              c.crossfitBoxId === crossfitBoxId
+                ? { ...c, isFavorite: response.data.data.isFavorite, togglingFavorite: false }
+                : c
             ),
           };
         });
@@ -335,28 +335,28 @@ export default function HomeScreen() {
         if (!prev) return prev;
         return {
           ...prev,
-          myGymsPreview: prev.myGymsPreview.map((g) =>
-            g.gymId === gymId ? { ...g, togglingFavorite: false } : g
+          myCrossfitBoxesPreview: prev.myCrossfitBoxesPreview.map((c) =>
+            c.crossfitBoxId === crossfitBoxId ? { ...c, togglingFavorite: false } : c
           ),
         };
       });
     }
   };
 
-  // 내 체육관에서 제거
-  const handleRemoveGym = async (gymId: number) => {
+  // 내 크로스핏박스에서 제거
+  const handleRemoveCrossfitBox = async (crossfitBoxId: number) => {
     try {
-      await axiosInstance.delete(`/member-gym/${gymId}`);
+      await axiosInstance.delete(`/member-crossfit-box/${crossfitBoxId}`);
       // 성공 시 목록에서 제거
       if (summary) {
         setSummary({
           ...summary,
-          myGymsPreview: summary.myGymsPreview.filter((g) => g.gymId !== gymId),
+          myCrossfitBoxesPreview: summary.myCrossfitBoxesPreview.filter((c) => c.crossfitBoxId !== crossfitBoxId),
         });
       }
-      gymEvents.emit();
+      crossfitBoxEvents.emit();
     } catch (error) {
-      console.error('체육관 제거 실패:', error);
+      console.error('크로스핏박스 제거 실패:', error);
     }
   };
 
@@ -394,13 +394,13 @@ export default function HomeScreen() {
             <View style={[styles.skeletonButton, { marginTop: 20 }]} />
           </View>
 
-          {/* 스켈레톤: 내 체육관 미리보기 */}
+          {/* 스켈레톤: 내 크로스핏박스 미리보기 */}
           <View style={styles.sectionHeader}>
             <View style={[styles.skeletonText, { width: 100, height: 18 }]} />
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gymPreviewScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.crossfitBoxPreviewScroll}>
             {[1, 2, 3].map((i) => (
-              <View key={i} style={[styles.gymPreviewCard, styles.skeleton]}>
+              <View key={i} style={[styles.crossfitBoxPreviewCard, styles.skeleton]}>
                 <View style={[styles.skeletonText, { width: '70%', height: 16 }]} />
               </View>
             ))}
@@ -420,7 +420,7 @@ export default function HomeScreen() {
             <Ionicons name="location-outline" size={48} color="#588157" />
             <Text style={styles.permissionTitle}>위치 권한이 필요해요</Text>
             <Text style={styles.permissionDescription}>
-              근처 체육관을 찾으려면 위치 권한이 필요합니다.
+              근처 크로스핏박스를 찾으려면 위치 권한이 필요합니다.
               {'\n'}권한을 허용하시거나 주소로 검색해보세요.
             </Text>
 
@@ -466,7 +466,7 @@ export default function HomeScreen() {
     );
   }
 
-  const isMyGymsEmpty = !summary?.myGymsPreview || summary.myGymsPreview.length === 0;
+  const isMyCrossfitBoxesEmpty = !summary?.myCrossfitBoxesPreview || summary.myCrossfitBoxesPreview.length === 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -474,14 +474,14 @@ export default function HomeScreen() {
         {/* 근처 요약 카드 */}
         <View style={styles.summaryCard}>
           <TouchableOpacity
-            onPress={handleGoToNearbyGyms}
+            onPress={handleGoToNearbyCrossfitBoxes}
             activeOpacity={0.7}
-            accessibilityLabel={`근처 체육관 ${summary?.nearbyGymCount || 0}개`}
+            accessibilityLabel={`근처 크로스핏박스 ${summary?.nearbyCrossfitBoxCount || 0}개`}
             accessibilityRole="button"
             disabled={!currentLocation}
           >
             <Text style={styles.summaryTitle}>
-              근처 체육관 <Text style={styles.summaryCount}>{summary?.nearbyGymCount || 0}</Text>개
+              근처 크로스핏박스 <Text style={styles.summaryCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
             </Text>
           </TouchableOpacity>
           {currentAddress && (
@@ -496,62 +496,62 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 내 체육관 섹션 */}
+        {/* 내 크로스핏박스 섹션 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>즐겨찾기</Text>
-          {(summary?.hasMoreMyGyms || (summary?.myGymsPreview && summary.myGymsPreview.length > 0)) && (
-            <TouchableOpacity onPress={handleGoToMyGyms}>
+          {(summary?.hasMoreMyCrossfitBoxes || (summary?.myCrossfitBoxesPreview && summary.myCrossfitBoxesPreview.length > 0)) && (
+            <TouchableOpacity onPress={handleGoToMyCrossfitBoxes}>
               <Text style={styles.moreButton}>더보기</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {isMyGymsEmpty ? (
+        {isMyCrossfitBoxesEmpty ? (
           // 빈 상태
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={48} color="#A3B18A" />
-            <Text style={styles.emptyText}>아직 등록된 체육관이 없어요</Text>
+            <Text style={styles.emptyText}>아직 등록된 크로스핏박스가 없어요</Text>
             <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleGoToMap}>
               <Ionicons name="map-outline" size={20} color="#fff" />
               <Text style={styles.emptyRegisterButtonText}>지도에서 추가하기</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          // 내 체육관 미리보기 리스트
+          // 내 크로스핏박스 미리보기 리스트
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.gymPreviewScroll}
-            contentContainerStyle={styles.gymPreviewScrollContent}
+            style={styles.crossfitBoxPreviewScroll}
+            contentContainerStyle={styles.crossfitBoxPreviewScrollContent}
           >
-            {summary?.myGymsPreview.map((gym) => (
+            {summary?.myCrossfitBoxesPreview.map((crossfitBox) => (
               <TouchableOpacity
-                key={gym.gymId}
+                key={crossfitBox.crossfitBoxId}
                 style={[
-                  styles.gymPreviewCard,
-                  gym.isDeleted && styles.gymPreviewCardDeleted,
+                  styles.crossfitBoxPreviewCard,
+                  crossfitBox.isDeleted && styles.crossfitBoxPreviewCardDeleted,
                 ]}
-                onPress={() => handleGymPress(gym)}
-                activeOpacity={gym.isDeleted ? 1 : 0.7}
+                onPress={() => handleCrossfitBoxPress(crossfitBox)}
+                activeOpacity={crossfitBox.isDeleted ? 1 : 0.7}
               >
                 {/* 별 버튼 (좌상단) */}
-                {!gym.isDeleted && (
+                {!crossfitBox.isDeleted && (
                   <TouchableOpacity
                     style={styles.favoriteButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleToggleFavorite(gym.gymId);
+                      handleToggleFavorite(crossfitBox.crossfitBoxId);
                     }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    disabled={gym.togglingFavorite}
+                    disabled={crossfitBox.togglingFavorite}
                   >
-                    {gym.togglingFavorite ? (
+                    {crossfitBox.togglingFavorite ? (
                       <ActivityIndicator size="small" color="#FFD700" />
                     ) : (
                       <Ionicons
-                        name={gym.isFavorite ? 'star' : 'star-outline'}
+                        name={crossfitBox.isFavorite ? 'star' : 'star-outline'}
                         size={18}
-                        color={gym.isFavorite ? '#FFD700' : '#ccc'}
+                        color={crossfitBox.isFavorite ? '#FFD700' : '#ccc'}
                       />
                     )}
                   </TouchableOpacity>
@@ -562,15 +562,15 @@ export default function HomeScreen() {
                   style={styles.removeButton}
                   onPress={(e) => {
                     e.stopPropagation();
-                    handleRemoveGym(gym.gymId);
+                    handleRemoveCrossfitBox(crossfitBox.crossfitBoxId);
                   }}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Ionicons name="close" size={16} color="#999" />
                 </TouchableOpacity>
 
-                <View style={styles.gymPreviewContent}>
-                  {gym.isDeleted && (
+                <View style={styles.crossfitBoxPreviewContent}>
+                  {crossfitBox.isDeleted && (
                     <Ionicons
                       name="alert-circle"
                       size={16}
@@ -580,12 +580,12 @@ export default function HomeScreen() {
                   )}
                   <Text
                     style={[
-                      styles.gymPreviewName,
-                      gym.isDeleted && styles.gymPreviewNameDeleted,
+                      styles.crossfitBoxPreviewName,
+                      crossfitBox.isDeleted && styles.crossfitBoxPreviewNameDeleted,
                     ]}
                     numberOfLines={2}
                   >
-                    {gym.isDeleted ? '없어진 체육관' : gym.name}
+                    {crossfitBox.isDeleted ? '없어진 크로스핏박스' : crossfitBox.name}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -744,14 +744,14 @@ const styles = StyleSheet.create({
     color: '#588157',
   },
 
-  // 내 체육관 미리보기
-  gymPreviewScroll: {
+  // 내 크로스핏박스 미리보기
+  crossfitBoxPreviewScroll: {
     marginHorizontal: -16,
   },
-  gymPreviewScrollContent: {
+  crossfitBoxPreviewScrollContent: {
     paddingHorizontal: 16,
   },
-  gymPreviewCard: {
+  crossfitBoxPreviewCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 8,
@@ -767,23 +767,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  gymPreviewCardDeleted: {
+  crossfitBoxPreviewCardDeleted: {
     backgroundColor: '#f8f8f8',
     borderWidth: 1,
     borderColor: '#e63946',
     borderStyle: 'dashed',
   },
-  gymPreviewContent: {
+  crossfitBoxPreviewContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  gymPreviewName: {
+  crossfitBoxPreviewName: {
     fontSize: 14,
     fontWeight: '500',
     color: '#344E41',
     textAlign: 'center',
   },
-  gymPreviewNameDeleted: {
+  crossfitBoxPreviewNameDeleted: {
     color: '#999',
     fontStyle: 'italic',
   },

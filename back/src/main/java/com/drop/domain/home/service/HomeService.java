@@ -1,9 +1,9 @@
 package com.drop.domain.home.service;
 
-import com.drop.domain.membergym.service.MemberGymService;
+import com.drop.domain.membercrossfitbox.service.MemberCrossfitBoxService;
 import com.drop.domain.home.dto.HomeSummaryDto;
-import com.drop.domain.membergym.dto.MemberGymPreviewDto;
-import com.drop.domain.gym.service.GymService;
+import com.drop.domain.membercrossfitbox.dto.MemberCrossfitBoxPreviewDto;
+import com.drop.domain.crossfitbox.service.CrossfitBoxService;
 import com.drop.global.enums.LocationMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,27 +17,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HomeService {
 
-    private final GymService gymService;
-    private final MemberGymService memberGymService;
+    private final CrossfitBoxService crossfitBoxService;
+    private final MemberCrossfitBoxService memberCrossfitBoxService;
 
-    private static final int MY_GYMS_PREVIEW_LIMIT = 5;
+    private static final int MY_CROSSFIT_BOXES_PREVIEW_LIMIT = 5;
 
     @Transactional(readOnly = true)
     public HomeSummaryDto getHomeSummary(Long memberId, LocationMode locationMode, Double latGrid, Double lngGrid) {
-        int nearbyGymCount = gymService.countNearbyGyms(latGrid, lngGrid);
+        int nearbyCrossfitBoxCount = crossfitBoxService.countNearbyCrossfitBoxes(latGrid, lngGrid);
 
-        List<MemberGymPreviewDto> myGymsPreview = memberGymService.getMyGymsPreview(memberId);
+        List<MemberCrossfitBoxPreviewDto> myCrossfitBoxesPreview = memberCrossfitBoxService.getMyCrossfitBoxesPreview(memberId);
 
-        int totalMyGyms = memberGymService.countMyGyms(memberId);
-        boolean hasMoreMyGyms = totalMyGyms > MY_GYMS_PREVIEW_LIMIT;
+        int totalMyCrossfitBoxes = memberCrossfitBoxService.countMyCrossfitBoxes(memberId);
+        boolean hasMoreMyCrossfitBoxes = totalMyCrossfitBoxes > MY_CROSSFIT_BOXES_PREVIEW_LIMIT;
 
         LocationMode nearbyBasis = (locationMode != null) ? locationMode : LocationMode.CURRENT;
 
         return HomeSummaryDto.builder()
-                .nearbyGymCount(nearbyGymCount)
+                .nearbyCrossfitBoxCount(nearbyCrossfitBoxCount)
                 .nearbyBasis(nearbyBasis)
-                .myGymsPreview(myGymsPreview)
-                .hasMoreMyGyms(hasMoreMyGyms)
+                .myCrossfitBoxesPreview(myCrossfitBoxesPreview)
+                .hasMoreMyCrossfitBoxes(hasMoreMyCrossfitBoxes)
                 .build();
     }
 }

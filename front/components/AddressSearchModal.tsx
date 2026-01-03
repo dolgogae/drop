@@ -36,8 +36,14 @@ const createPostcodeHtml = () => `
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
+    html, body { width: 100%; height: 100%; overflow: hidden; -webkit-text-size-adjust: none; }
     #wrap { width: 100%; height: 100%; }
+    input, textarea {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-appearance: none;
+      font-size: 16px !important;
+    }
   </style>
 </head>
 <body>
@@ -46,11 +52,10 @@ const createPostcodeHtml = () => `
   <script>
     (function() {
       function sendMessage(payload) {
-        var msg = JSON.stringify(payload);
         try {
-          window.ReactNativeWebView.postMessage(msg);
+          window.ReactNativeWebView.postMessage(JSON.stringify(payload));
         } catch (e) {
-          console.error('postMessage failed:', e);
+          console.error('postMessage failed', e);
         }
       }
 
@@ -108,8 +113,6 @@ export default function AddressSearchModal({
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
       const raw = event.nativeEvent.data;
-      console.log('[AddressSearchModal] WebView message:', raw);
-
       const msg: unknown = JSON.parse(raw);
 
       if (typeof msg !== 'object' || msg === null) {
@@ -118,6 +121,35 @@ export default function AddressSearchModal({
 
       const data = msg as Record<string, unknown>;
       const type = typeof data.type === 'string' ? data.type : '';
+
+      // WebView 로그 처리
+      if (type === 'LOG') {
+        const level = data.level as string;
+        const message = data.message as string;
+        const logData = data.data;
+        const timestamp = data.timestamp as string;
+
+        const logPrefix = `[AddressSearchModal:${level}] ${timestamp}`;
+        switch (level) {
+          case 'ERROR':
+            console.error(logPrefix, message, logData);
+            break;
+          case 'WARN':
+            console.warn(logPrefix, message, logData);
+            break;
+          case 'INFO':
+            console.info(logPrefix, message, logData);
+            break;
+          case 'DEBUG':
+            console.log(logPrefix, message, logData);
+            break;
+          default:
+            console.log(logPrefix, message, logData);
+        }
+        return;
+      }
+
+      console.log('[AddressSearchModal] WebView message:', type);
 
       if (type === 'CLOSE') {
         handleClose();
@@ -163,6 +195,12 @@ export default function AddressSearchModal({
     webViewRef.current?.reload();
   };
 
+  // WebView 프로세스 종료 시 자동 복구 (iOS 크래시 대응)
+  const handleContentProcessDidTerminate = () => {
+    console.log('[AddressSearchModal] WebView process terminated, reloading...');
+    webViewRef.current?.reload();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -201,8 +239,21 @@ export default function AddressSearchModal({
                 baseUrl: 'https://postcode.map.daum.net',
               }}
               onMessage={handleMessage}
-              onLoadEnd={() => setLoading(false)}
-              onError={() => setError(true)}
+              onLoadEnd={() => {
+                setLoading(false);
+                console.log('[AddressSearchModal] WebView loaded');
+              }}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('[AddressSearchModal] WebView error:', nativeEvent);
+                setError(true);
+              }}
+              onContentProcessDidTerminate={handleContentProcessDidTerminate}
+              onRenderProcessGone={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('[AddressSearchModal] WebView render process gone:', nativeEvent);
+                webViewRef.current?.reload();
+              }}
               style={[styles.webview, loading && styles.hidden]}
               javaScriptEnabled
               domStorageEnabled
@@ -210,7 +261,23 @@ export default function AddressSearchModal({
               mixedContentMode="always"
               allowsInlineMediaPlayback
               mediaPlaybackRequiresUserAction={false}
-              scalesPageToFit
+              // iOS 한글 입력 크래시 방지 설정
+              keyboardDisplayRequiresUserAction={false}
+              hideKeyboardAccessoryView={false}
+              allowsBackForwardNavigationGestures={false}
+              bounces={false}
+              automaticallyAdjustContentInsets={false}
+              allowsLinkPreview={false}
+              // 추가 iOS 안정화 설정
+              scrollEnabled={true}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              contentInsetAdjustmentBehavior="never"
+              // iOS WebView 안정성 설정
+              // incognito={true}  // 한글 IME 크래시 유발 - 비활성화
+              cacheEnabled={false}
+              // 하드웨어 가속 사용
+              androidLayerType="hardware"
             />
           </>
         )}

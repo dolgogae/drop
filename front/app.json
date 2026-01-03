@@ -8,7 +8,6 @@
     "icon": "./drop_logo.png",
     "scheme": "drop-front",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.drop.app",
