@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Linking,
   Platform,
   SafeAreaView,
@@ -89,6 +90,49 @@ export default function CrossfitBoxDetailScreen() {
   const [schedule, setSchedule] = useState<ScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 토스트 상태
+  const [toast, setToast] = useState<{ visible: boolean; message: string; time: string; color: string; x: number; y: number }>({
+    visible: false,
+    message: '',
+    time: '',
+    color: DEFAULT_COLOR,
+    x: 0,
+    y: 0,
+  });
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (className: string, startTime: string, endTime: string, color: string, pageX: number, pageY: number) => {
+    if (toastTimeout.current) {
+      clearTimeout(toastTimeout.current);
+    }
+
+    setToast({
+      visible: true,
+      message: className,
+      time: `${startTime} ~ ${endTime}`,
+      color,
+      x: pageX,
+      y: pageY + 10,
+    });
+
+    Animated.timing(toastOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+
+    toastTimeout.current = setTimeout(() => {
+      Animated.timing(toastOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start(() => {
+        setToast((prev) => ({ ...prev, visible: false }));
+      });
+    }, 2000);
+  };
 
   useEffect(() => {
     if (id) {
@@ -212,7 +256,7 @@ export default function CrossfitBoxDetailScreen() {
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="#344E41" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>크로스핏박스 정보</Text>
+        <Text style={styles.headerTitle}>Box 정보</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -314,86 +358,196 @@ export default function CrossfitBoxDetailScreen() {
         )}
 
         {/* 시간표 (그리드 형식) */}
-        {schedule && schedule.schedules && schedule.schedules.length > 0 && (
-          <View style={styles.scheduleCard}>
-            <Text style={styles.sectionTitle}>시간표</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View>
-                {/* 요일 헤더 */}
-                <View style={styles.gridHeaderRow}>
-                  <View style={styles.gridTimeLabel} />
-                  {DAYS_ORDER.map((day) => (
-                    <View key={day} style={styles.gridDayHeaderCell}>
-                      <Text style={styles.gridDayHeaderText}>{DAY_LABELS[day]}</Text>
-                    </View>
-                  ))}
-                </View>
+        {schedule && schedule.schedules && schedule.schedules.length > 0 && (() => {
+          const timeToIndex = (t: string) => TIME_SLOTS.indexOf(t);
 
-                {/* 시간 그리드 */}
-                {TIME_SLOTS.map((time, timeIndex) => {
-                  const timeToIndex = (t: string) => TIME_SLOTS.indexOf(t);
+          // 일정이 있는 시간 인덱스 세트 계산
+          const usedTimeIndices = new Set<number>();
+          schedule.schedules.forEach((daySchedule) => {
+            if (daySchedule.isClosed) return;
+            daySchedule.timeSlots.forEach((slot) => {
+              const startIndex = timeToIndex(slot.startTime);
+              const endTime = slot.endTime || TIME_SLOTS[Math.min(startIndex + 2, TIME_SLOTS.length - 1)];
+              const endIndex = timeToIndex(endTime);
+              for (let i = startIndex; i < endIndex; i++) {
+                usedTimeIndices.add(i);
+              }
+            });
+          });
 
-                  const getSlotAtTime = (dayOfWeek: string, t: string) => {
-                    const daySchedule = schedule.schedules.find((s) => s.dayOfWeek === dayOfWeek);
-                    if (!daySchedule || daySchedule.isClosed) return null;
+          // 일정이 없으면 표시하지 않음
+          if (usedTimeIndices.size === 0) return null;
 
-                    const tIndex = timeToIndex(t);
-                    for (const slot of daySchedule.timeSlots) {
-                      const startIndex = timeToIndex(slot.startTime);
-                      const endTime = slot.endTime || TIME_SLOTS[Math.min(startIndex + 2, TIME_SLOTS.length - 1)];
-                      const endIndex = timeToIndex(endTime);
-                      if (tIndex >= startIndex && tIndex < endIndex) {
-                        return { slot, isFirst: tIndex === startIndex };
-                      }
-                    }
-                    return null;
-                  };
+          // 사용되는 시간 인덱스를 정렬
+          const sortedIndices = Array.from(usedTimeIndices).sort((a, b) => a - b);
 
-                  return (
-                    <View key={time} style={styles.gridTimeRow}>
-                      <View style={styles.gridTimeLabel}>
-                        <Text style={styles.gridTimeLabelText}>{time}</Text>
+          // 연속되지 않는 구간을 찾아서 그룹핑
+          const timeGroups: { indices: number[]; startTime: string; endTime: string }[] = [];
+          let currentGroup: number[] = [];
+
+          sortedIndices.forEach((idx, i) => {
+            if (currentGroup.length === 0) {
+              currentGroup.push(idx);
+            } else {
+              const lastIdx = currentGroup[currentGroup.length - 1];
+              if (idx === lastIdx + 1) {
+                currentGroup.push(idx);
+              } else {
+                // 그룹 종료
+                timeGroups.push({
+                  indices: [...currentGroup],
+                  startTime: TIME_SLOTS[currentGroup[0]],
+                  endTime: TIME_SLOTS[currentGroup[currentGroup.length - 1] + 1] || '24:00',
+                });
+                currentGroup = [idx];
+              }
+            }
+          });
+          // 마지막 그룹 추가
+          if (currentGroup.length > 0) {
+            timeGroups.push({
+              indices: [...currentGroup],
+              startTime: TIME_SLOTS[currentGroup[0]],
+              endTime: TIME_SLOTS[currentGroup[currentGroup.length - 1] + 1] || '24:00',
+            });
+          }
+
+          const getSlotAtTime = (dayOfWeek: string, t: string) => {
+            const daySchedule = schedule.schedules.find((s) => s.dayOfWeek === dayOfWeek);
+            if (!daySchedule || daySchedule.isClosed) return null;
+
+            const tIndex = timeToIndex(t);
+            for (const slot of daySchedule.timeSlots) {
+              const startIndex = timeToIndex(slot.startTime);
+              const endTime = slot.endTime || TIME_SLOTS[Math.min(startIndex + 2, TIME_SLOTS.length - 1)];
+              const endIndex = timeToIndex(endTime);
+              if (tIndex >= startIndex && tIndex < endIndex) {
+                return { slot, isFirst: tIndex === startIndex, isLast: tIndex === endIndex - 1, endTime };
+              }
+            }
+            return null;
+          };
+
+          // 해당 시간에 어느 요일에서든 일정이 시작하는지 확인
+          const isStartTime = (t: string) => {
+            return schedule.schedules.some((daySchedule) => {
+              if (daySchedule.isClosed) return false;
+              return daySchedule.timeSlots.some((slot) => slot.startTime === t);
+            });
+          };
+
+          return (
+            <View style={styles.scheduleCard}>
+              <Text style={styles.sectionTitle}>시간표</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View>
+                  {/* 요일 헤더 */}
+                  <View style={styles.gridHeaderRow}>
+                    <View style={styles.gridTimeLabel} />
+                    {DAYS_ORDER.map((day) => (
+                      <View key={day} style={styles.gridDayHeaderCell}>
+                        <Text style={styles.gridDayHeaderText}>{DAY_LABELS[day]}</Text>
                       </View>
-                      {DAYS_ORDER.map((day) => {
-                        const slotInfo = getSlotAtTime(day, time);
+                    ))}
+                  </View>
 
-                        if (slotInfo) {
-                          const { slot, isFirst } = slotInfo;
-                          const color = slot.color || DEFAULT_COLOR;
-
-                          return (
-                            <View
-                              key={`${day}-${time}`}
-                              style={[
-                                styles.gridCell,
-                                { backgroundColor: color },
-                                isFirst && styles.gridCellFirstBlock,
-                              ]}
-                            >
-                              {isFirst && (
-                                <Text style={styles.gridCellText} numberOfLines={1}>
-                                  {slot.className}
-                                </Text>
-                              )}
+                  {/* 시간 그리드 (그룹별로 렌더링) */}
+                  {timeGroups.map((group, groupIndex) => (
+                    <React.Fragment key={`group-${groupIndex}`}>
+                      {/* 구분선 (첫 번째 그룹이 아닌 경우) */}
+                      {groupIndex > 0 && (
+                        <View style={styles.gridDividerRow}>
+                          <View style={styles.gridTimeLabel}>
+                            <Text style={styles.gridDividerText}>⋮</Text>
+                          </View>
+                          {DAYS_ORDER.map((day) => (
+                            <View key={`divider-${day}`} style={styles.gridDividerCell}>
+                              <View style={styles.gridDividerLine} />
                             </View>
-                          );
-                        }
+                          ))}
+                        </View>
+                      )}
 
+                      {/* 해당 그룹의 시간 슬롯들 */}
+                      {group.indices.map((timeIndex) => {
+                        const time = TIME_SLOTS[timeIndex];
                         return (
-                          <View
-                            key={`${day}-${time}`}
-                            style={[styles.gridCell, styles.gridCellEmpty]}
-                          />
+                          <View key={time} style={styles.gridTimeRow}>
+                            <View style={styles.gridTimeLabel}>
+                              <Text style={styles.gridTimeLabelText}>
+                                {isStartTime(time) ? time : ''}
+                              </Text>
+                            </View>
+                            {DAYS_ORDER.map((day) => {
+                              const slotInfo = getSlotAtTime(day, time);
+
+                              if (slotInfo) {
+                                const { slot, isFirst, isLast, endTime } = slotInfo;
+                                const color = slot.color || DEFAULT_COLOR;
+
+                                return (
+                                  <TouchableOpacity
+                                    key={`${day}-${time}`}
+                                    style={[
+                                      styles.gridCell,
+                                      styles.gridCellFilled,
+                                      { backgroundColor: color },
+                                      isFirst && styles.gridCellFirstBlock,
+                                      isLast && styles.gridCellLastBlock,
+                                    ]}
+                                    activeOpacity={0.7}
+                                    onPress={(e) => {
+                                      const { pageX, pageY } = e.nativeEvent;
+                                      showToast(slot.className, slot.startTime, endTime, color, pageX, pageY);
+                                    }}
+                                  >
+                                    {isFirst && (
+                                      <Text style={styles.gridCellText} numberOfLines={1}>
+                                        {slot.className}
+                                      </Text>
+                                    )}
+                                  </TouchableOpacity>
+                                );
+                              }
+
+                              return (
+                                <View
+                                  key={`${day}-${time}`}
+                                  style={[styles.gridCell, styles.gridCellEmpty]}
+                                />
+                              );
+                            })}
+                          </View>
                         );
                       })}
-                    </View>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          </View>
-        )}
+                    </React.Fragment>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          );
+        })()}
       </ScrollView>
+
+      {/* 토스트 */}
+      {toast.visible && (
+        <Animated.View
+          style={[
+            styles.toast,
+            {
+              opacity: toastOpacity,
+              top: toast.y,
+              left: Math.max(16, Math.min(toast.x - 100, 200)),
+            },
+          ]}
+        >
+          <View style={[styles.toastColorBar, { backgroundColor: toast.color }]} />
+          <View style={styles.toastContent}>
+            <Text style={styles.toastMessage}>{toast.message}</Text>
+            <Text style={styles.toastTime}>{toast.time}</Text>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -572,7 +726,7 @@ const styles = StyleSheet.create({
   scheduleCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     marginTop: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -580,51 +734,121 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  dayScheduleRow: {
+  // 그리드 스타일
+  gridHeaderRow: {
     flexDirection: 'row',
-    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#eee',
+    backgroundColor: '#fafafa',
   },
-  dayLabelContainer: {
-    width: 36,
-    marginRight: 12,
+  gridDayHeaderCell: {
+    width: 38,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  dayLabel: {
-    fontSize: 15,
+  gridDayHeaderText: {
+    fontSize: 11,
     fontWeight: '600',
     color: '#344E41',
   },
-  dayLabelClosed: {
-    color: '#A3B18A',
+  gridTimeRow: {
+    flexDirection: 'row',
   },
-  timeSlotsContainer: {
-    flex: 1,
+  gridTimeLabel: {
+    width: TIME_LABEL_WIDTH,
+    height: CELL_HEIGHT,
+    justifyContent: 'center',
+    paddingRight: 4,
   },
-  timeSlotItem: {
+  gridTimeLabelText: {
+    fontSize: 8,
+    color: '#888',
+    textAlign: 'right',
+  },
+  gridCell: {
+    width: 38,
+    height: CELL_HEIGHT,
+    borderLeftWidth: 0.5,
+    borderLeftColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gridCellEmpty: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eee',
+  },
+  gridCellFilled: {
+    borderLeftWidth: 0,
+  },
+  gridCellFirstBlock: {
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  gridCellLastBlock: {
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+  },
+  gridCellText: {
+    fontSize: 7,
+    color: '#fff',
+    fontWeight: '500',
+    paddingHorizontal: 1,
+  },
+  gridDividerRow: {
+    flexDirection: 'row',
+    height: 16,
+    backgroundColor: '#fafafa',
+  },
+  gridDividerText: {
+    fontSize: 10,
+    color: '#bbb',
+    textAlign: 'right',
+    paddingRight: 4,
+  },
+  gridDividerCell: {
+    width: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gridDividerLine: {
+    width: '60%',
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  // 토스트 스타일
+  toast: {
+    position: 'absolute',
+    width: 200,
+    backgroundColor: '#fff',
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
   },
-  timeText: {
+  toastColorBar: {
+    width: 6,
+    alignSelf: 'stretch',
+  },
+  toastContent: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  toastMessage: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#588157',
-    width: 50,
-    marginRight: 8,
-  },
-  classNameText: {
-    fontSize: 14,
     color: '#344E41',
-    flex: 1,
+    marginBottom: 2,
   },
-  closedText: {
-    fontSize: 14,
-    color: '#A3B18A',
-    fontStyle: 'italic',
-  },
-  noClassText: {
-    fontSize: 14,
-    color: '#A3B18A',
+  toastTime: {
+    fontSize: 12,
+    color: '#588157',
   },
 });

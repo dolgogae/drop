@@ -91,6 +91,10 @@ export default function ScheduleManagement() {
     repeatTimes: string[]; // 추가 시작 시간들
   } | null>(null);
 
+  // 다중 선택 모드
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set()); // "DAY-startTime" 형식
+
   useEffect(() => {
     fetchSchedule();
   }, []);
@@ -364,6 +368,7 @@ export default function ScheduleManagement() {
     );
   };
 
+  // 단일 일정 삭제 (모달에서)
   const handleModalDelete = () => {
     if (!modalData || !modalData.isEdit || modalData.editIndex === undefined) return;
 
@@ -389,6 +394,61 @@ export default function ScheduleManagement() {
     ]);
   };
 
+  // 길게 눌러서 다중 선택 모드 시작
+  const handleLongPress = (day: DayOfWeek, slot: TimeSlot) => {
+    const key = `${day}-${slot.startTime}`;
+    setIsMultiSelectMode(true);
+    setSelectedSlots(new Set([key]));
+  };
+
+  // 다중 선택 모드에서 셀 선택/해제
+  const toggleSlotSelection = (day: DayOfWeek, slot: TimeSlot) => {
+    const key = `${day}-${slot.startTime}`;
+    setSelectedSlots((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  // 다중 선택 모드 취소
+  const cancelMultiSelect = () => {
+    setIsMultiSelectMode(false);
+    setSelectedSlots(new Set());
+  };
+
+  // 선택된 일정 일괄 삭제
+  const handleBatchDelete = () => {
+    if (selectedSlots.size === 0) return;
+
+    Alert.alert(
+      '일괄 삭제',
+      `선택한 ${selectedSlots.size}개의 일정을 삭제하시겠습니까?`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            setSchedules((prev) =>
+              prev.map((s) => ({
+                ...s,
+                timeSlots: s.timeSlots.filter(
+                  (slot) => !selectedSlots.has(`${s.dayOfWeek}-${slot.startTime}`)
+                ),
+              }))
+            );
+            cancelMultiSelect();
+          },
+        },
+      ]
+    );
+  };
+
   const renderCell = (day: DayOfWeek, time: string, timeIndex: number) => {
     const slotInfo = getSlotAtTime(day, time);
     const isSelectStart = selectStart?.day === day && selectStart?.time === time;
@@ -396,24 +456,44 @@ export default function ScheduleManagement() {
     if (slotInfo) {
       const { slot } = slotInfo;
       const startIndex = timeToIndex(slot.startTime);
+      const endIndex = timeToIndex(slot.endTime);
       const isFirstBlock = timeIndex === startIndex;
+      const isLastBlock = timeIndex === endIndex - 1;
       const color = slot.color || DEFAULT_COLOR;
+      const slotKey = `${day}-${slot.startTime}`;
+      const isSlotSelected = selectedSlots.has(slotKey);
 
       return (
         <TouchableOpacity
           key={`${day}-${time}`}
           style={[
             styles.cell,
+            styles.cellFilled,
             { backgroundColor: color },
             isFirstBlock && styles.cellFirstBlock,
+            isLastBlock && styles.cellLastBlock,
+            isSlotSelected && styles.cellMultiSelected,
           ]}
-          onPress={() => handleCellPress(day, time)}
+          onPress={() => {
+            if (isMultiSelectMode) {
+              toggleSlotSelection(day, slot);
+            } else {
+              handleCellPress(day, time);
+            }
+          }}
+          onLongPress={() => handleLongPress(day, slot)}
+          delayLongPress={300}
           activeOpacity={0.7}
         >
           {isFirstBlock && (
             <Text style={styles.cellText} numberOfLines={1}>
               {slot.className}
             </Text>
+          )}
+          {isSlotSelected && isFirstBlock && (
+            <View style={styles.cellCheckmark}>
+              <Ionicons name="checkmark-circle" size={14} color="#fff" />
+            </View>
           )}
         </TouchableOpacity>
       );
@@ -427,7 +507,13 @@ export default function ScheduleManagement() {
           styles.cellEmpty,
           isSelectStart && styles.cellSelected,
         ]}
-        onPress={() => handleCellPress(day, time)}
+        onPress={() => {
+          if (isMultiSelectMode) {
+            // 다중 선택 모드에서 빈 셀 클릭 시 무시
+            return;
+          }
+          handleCellPress(day, time);
+        }}
         activeOpacity={0.7}
       >
         {isSelectStart && (
@@ -467,10 +553,28 @@ export default function ScheduleManagement() {
 
       {/* 액션 바 */}
       <View style={styles.actionBar}>
-        <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-          <Ionicons name="trash-outline" size={16} color="#e63946" />
-          <Text style={styles.clearButtonText}>전체 삭제</Text>
-        </TouchableOpacity>
+        {isMultiSelectMode ? (
+          <>
+            <TouchableOpacity style={styles.cancelSelectButton} onPress={cancelMultiSelect}>
+              <Ionicons name="close" size={18} color="#666" />
+              <Text style={styles.cancelSelectText}>취소</Text>
+            </TouchableOpacity>
+            <Text style={styles.selectedCountText}>{selectedSlots.size}개 선택됨</Text>
+            <TouchableOpacity
+              style={[styles.batchDeleteButton, selectedSlots.size === 0 && styles.batchDeleteButtonDisabled]}
+              onPress={handleBatchDelete}
+              disabled={selectedSlots.size === 0}
+            >
+              <Ionicons name="trash-outline" size={16} color="#fff" />
+              <Text style={styles.batchDeleteText}>삭제</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
+            <Ionicons name="trash-outline" size={16} color="#e63946" />
+            <Text style={styles.clearButtonText}>전체 삭제</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 선택 힌트 */}
@@ -507,7 +611,9 @@ export default function ScheduleManagement() {
         {TIME_SLOTS.map((time, timeIndex) => (
           <View key={time} style={styles.timeRow}>
             <View style={styles.timeLabel}>
-              <Text style={styles.timeLabelText}>{time}</Text>
+              <Text style={styles.timeLabelText}>
+                {time.endsWith(':00') ? time : ''}
+              </Text>
             </View>
             {DAYS.map((day) => renderCell(day.key, time, timeIndex))}
           </View>
@@ -599,7 +705,7 @@ export default function ScheduleManagement() {
               <Text style={styles.modalSectionHint}>같은 수업을 다른 시간에도 추가합니다</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.repeatTimeRow}>
-                  {TIME_SLOTS.filter((t) => t.endsWith(':00')).map((time) => {
+                  {TIME_SLOTS.map((time) => {
                     if (time === modalData?.startTime) return null;
                     const isSelected = modalData?.repeatTimes.includes(time);
                     return (
@@ -737,6 +843,41 @@ const styles = StyleSheet.create({
     color: '#e63946',
     fontWeight: '500',
   },
+  cancelSelectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  cancelSelectText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  selectedCountText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#344E41',
+  },
+  batchDeleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e63946',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  batchDeleteButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  batchDeleteText: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '600',
+  },
   selectionHint: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -788,8 +929,6 @@ const styles = StyleSheet.create({
   },
   timeRow: {
     flexDirection: 'row',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#eee',
   },
   timeLabel: {
     width: TIME_LABEL_WIDTH,
@@ -812,11 +951,14 @@ const styles = StyleSheet.create({
   },
   cellEmpty: {
     backgroundColor: '#fff',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eee',
+  },
+  cellFilled: {
+    borderLeftWidth: 0,
   },
   cellSelected: {
     backgroundColor: '#e8f5e9',
-    borderWidth: 1,
-    borderColor: '#588157',
   },
   cellSelectedIndicator: {
     width: 8,
@@ -825,8 +967,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#588157',
   },
   cellFirstBlock: {
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  cellLastBlock: {
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+  },
+  cellMultiSelected: {
+    opacity: 0.7,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  cellCheckmark: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
   },
   cellText: {
     fontSize: 8,

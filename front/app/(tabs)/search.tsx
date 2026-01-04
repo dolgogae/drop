@@ -92,7 +92,7 @@ export default function SearchScreen() {
               style={styles.input}
               value={keyword}
               onChangeText={setKeyword}
-              placeholder="예: 크로스핏 강남"
+              placeholder="예: 크로스핏 XXX"
               placeholderTextColor="#A3B18A"
             />
             {keyword.length > 0 && (
