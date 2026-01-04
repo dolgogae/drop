@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -76,10 +78,44 @@ export default function MapScreen() {
     longitudeDelta: 0.05,
   });
 
-  useEffect(() => {
-    fetchCrossfitBoxesByBounds(region, true);
-    fetchMyCrossfitBoxes();
+  // 탭이 포커스될 때마다 현재 위치로 이동
+  useFocusEffect(
+    useCallback(() => {
+      const moveToCurrentLocation = async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            // 권한이 없으면 기본 위치 사용
+            fetchCrossfitBoxesByBounds(region, true);
+            return;
+          }
 
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+
+          const newRegion = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          };
+
+          setRegion(newRegion);
+          mapRef.current?.animateToRegion(newRegion, 300);
+          fetchCrossfitBoxesByBounds(newRegion, true);
+        } catch (error) {
+          console.error('현재 위치 조회 실패:', error);
+          fetchCrossfitBoxesByBounds(region, true);
+        }
+      };
+
+      moveToCurrentLocation();
+      fetchMyCrossfitBoxes();
+    }, [])
+  );
+
+  useEffect(() => {
     // 컴포넌트 언마운트 시 타이머 정리
     return () => {
       if (debounceRef.current) {
