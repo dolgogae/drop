@@ -109,6 +109,24 @@ public class CrossfitBox extends BaseEntity implements Authenticatable {
         this.longitude = longitude;
     }
 
+    public void updateInfo(String name, String phoneNumber, String etcInfo) {
+        if (name != null) {
+            this.name = name;
+        }
+        if (phoneNumber != null) {
+            this.phoneNumber = phoneNumber;
+        }
+        if (etcInfo != null) {
+            this.etcInfo = etcInfo;
+        }
+    }
+
+    public void updateUsageInfo(UsageInfo usageInfo) {
+        if (usageInfo != null) {
+            this.usageInfo = usageInfo;
+        }
+    }
+
     @Embeddable
     @Getter
     @NoArgsConstructor

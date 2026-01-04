@@ -4,6 +4,8 @@ import com.drop.domain.geocoding.service.GeocodingService;
 import com.drop.domain.crossfitbox.data.CrossfitBox;
 import com.drop.domain.crossfitbox.dto.CrossfitBoxCreateDto;
 import com.drop.domain.crossfitbox.dto.CrossfitBoxDto;
+import com.drop.domain.crossfitbox.dto.CrossfitBoxUpdateDto;
+import com.drop.domain.base.Address;
 import com.drop.domain.crossfitbox.mapper.CrossfitBoxMapper;
 import com.drop.domain.crossfitbox.repository.CrossfitBoxRepository;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +68,39 @@ public class CrossfitBoxService {
         return crossfitBoxRepository.searchByName(keyword.trim()).stream()
                 .map(crossfitBoxMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public CrossfitBoxDto updateCrossfitBox(Long crossfitBoxId, CrossfitBoxUpdateDto updateDto) {
+        CrossfitBox crossfitBox = crossfitBoxRepository.findById(crossfitBoxId)
+                .orElseThrow(() -> new IllegalArgumentException("크로스핏박스를 찾을 수 없습니다."));
+
+        // 기본 정보 업데이트
+        crossfitBox.updateInfo(updateDto.getName(), updateDto.getPhoneNumber(), updateDto.getEtcInfo());
+
+        // 주소 업데이트
+        if (updateDto.getAddress() != null) {
+            Address newAddress = Address.create(updateDto.getAddress());
+            crossfitBox.updateAddress(newAddress);
+
+            // 주소 변경 시 좌표 재설정
+            if (updateDto.getAddress().getAddressLine1() != null) {
+                geocodingService.getCoordinates(updateDto.getAddress().getAddressLine1())
+                        .ifPresent(coords -> crossfitBox.updateCoordinates(coords.latitude(), coords.longitude()));
+            }
+        }
+
+        // 시설 정보 업데이트
+        if (updateDto.getUsageInfo() != null) {
+            CrossfitBox.UsageInfo newUsageInfo = CrossfitBox.UsageInfo.builder()
+                    .parking(updateDto.getUsageInfo().getParking())
+                    .wear(updateDto.getUsageInfo().getWear())
+                    .locker(updateDto.getUsageInfo().getLocker())
+                    .build();
+            crossfitBox.updateUsageInfo(newUsageInfo);
+        }
+
+        return crossfitBoxMapper.toDto(crossfitBox);
     }
 
     private static final double DEFAULT_RADIUS_KM = 5.0;

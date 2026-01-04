@@ -24,6 +24,13 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
+    id: 'edit-box',
+    title: '박스 정보 관리',
+    description: '박스 이름, 주소, 시설 정보를 수정합니다',
+    icon: 'business-outline',
+    route: '/admin/edit-box',
+  },
+  {
     id: 'schedule',
     title: '시간표 관리',
     description: '요일별 수업 시간표를 설정합니다',
