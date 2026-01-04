@@ -2,6 +2,8 @@ package com.drop.domain.crossfitbox.controller;
 
 import com.drop.domain.crossfitbox.dto.CrossfitBoxDto;
 import com.drop.domain.crossfitbox.service.CrossfitBoxService;
+import com.drop.domain.schedule.dto.ScheduleListDto;
+import com.drop.domain.schedule.service.ScheduleService;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +26,7 @@ import java.util.List;
 public class CrossfitBoxController {
 
     private final CrossfitBoxService crossfitBoxService;
+    private final ScheduleService scheduleService;
 
     @Operation(summary = "크로스핏박스 이름 검색", description = "크로스핏박스 이름으로 검색합니다.")
     @GetMapping("/search")
@@ -60,5 +63,14 @@ public class CrossfitBoxController {
     ) {
         CrossfitBoxDto crossfitBox = crossfitBoxService.getCrossfitBoxById(crossfitBoxId);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.GYM_DETAIL_SUCCESS, crossfitBox));
+    }
+
+    @Operation(summary = "크로스핏박스 시간표 조회", description = "크로스핏박스의 시간표를 조회합니다.")
+    @GetMapping("/{crossfitBoxId}/schedule")
+    public ResponseEntity<ResultResponse> getCrossfitBoxSchedule(
+            @Parameter(description = "크로스핏박스 ID") @PathVariable Long crossfitBoxId
+    ) {
+        ScheduleListDto schedule = scheduleService.getSchedule(crossfitBoxId);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.SCHEDULE_GET_SUCCESS, schedule));
     }
 }

@@ -35,7 +35,7 @@ public class MyPageController {
     public ResponseEntity<ResultResponse> getMyProfile(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        MyPageProfileDto profile = myPageService.getMyProfile(userDetails.getId());
+        MyPageProfileDto profile = myPageService.getMyProfile(userDetails.getId(), userDetails.getUserRole());
         return ResponseEntity.ok(ResultResponse.of(ResultCode.GET_MY_INFO_SUCCESS, profile));
     }
 

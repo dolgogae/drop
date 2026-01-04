@@ -38,16 +38,62 @@ interface CrossfitBoxDetail {
   usageInfoDto?: CrossfitBoxUsageInfo;
 }
 
+interface TimeSlot {
+  id: number;
+  startTime: string;
+  endTime?: string;
+  className: string;
+  color?: string;
+  displayOrder: number;
+}
+
+interface DaySchedule {
+  id: number;
+  dayOfWeek: string;
+  isClosed: boolean;
+  timeSlots: TimeSlot[];
+}
+
+interface ScheduleData {
+  crossfitBoxId: number;
+  schedules: DaySchedule[];
+}
+
+const DAY_LABELS: Record<string, string> = {
+  MONDAY: '월',
+  TUESDAY: '화',
+  WEDNESDAY: '수',
+  THURSDAY: '목',
+  FRIDAY: '금',
+  SATURDAY: '토',
+  SUNDAY: '일',
+};
+
+const DAYS_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+// 05:00 ~ 24:00 (38블록)
+const TIME_SLOTS: string[] = [];
+for (let hour = 5; hour < 24; hour++) {
+  TIME_SLOTS.push(`${hour.toString().padStart(2, '0')}:00`);
+  TIME_SLOTS.push(`${hour.toString().padStart(2, '0')}:30`);
+}
+
+const CELL_HEIGHT = 20;
+const TIME_LABEL_WIDTH = 45;
+const DEFAULT_COLOR = '#588157';
+
 export default function CrossfitBoxDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [crossfitBox, setCrossfitBox] = useState<CrossfitBoxDetail | null>(null);
+  const [schedule, setSchedule] = useState<ScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchCrossfitBoxDetail();
+      fetchSchedule();
     }
   }, [id]);
 
@@ -64,6 +110,17 @@ export default function CrossfitBoxDetailScreen() {
       setError('Box 정보를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSchedule = async () => {
+    try {
+      const response = await axiosInstance.get(`/crossfit-boxes/${id}/schedule`);
+      if (response.data?.data) {
+        setSchedule(response.data.data);
+      }
+    } catch (err: any) {
+      console.error('시간표 조회 실패:', err);
     }
   };
 
@@ -255,6 +312,87 @@ export default function CrossfitBoxDetailScreen() {
             </View>
           </View>
         )}
+
+        {/* 시간표 (그리드 형식) */}
+        {schedule && schedule.schedules && schedule.schedules.length > 0 && (
+          <View style={styles.scheduleCard}>
+            <Text style={styles.sectionTitle}>시간표</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                {/* 요일 헤더 */}
+                <View style={styles.gridHeaderRow}>
+                  <View style={styles.gridTimeLabel} />
+                  {DAYS_ORDER.map((day) => (
+                    <View key={day} style={styles.gridDayHeaderCell}>
+                      <Text style={styles.gridDayHeaderText}>{DAY_LABELS[day]}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* 시간 그리드 */}
+                {TIME_SLOTS.map((time, timeIndex) => {
+                  const timeToIndex = (t: string) => TIME_SLOTS.indexOf(t);
+
+                  const getSlotAtTime = (dayOfWeek: string, t: string) => {
+                    const daySchedule = schedule.schedules.find((s) => s.dayOfWeek === dayOfWeek);
+                    if (!daySchedule || daySchedule.isClosed) return null;
+
+                    const tIndex = timeToIndex(t);
+                    for (const slot of daySchedule.timeSlots) {
+                      const startIndex = timeToIndex(slot.startTime);
+                      const endTime = slot.endTime || TIME_SLOTS[Math.min(startIndex + 2, TIME_SLOTS.length - 1)];
+                      const endIndex = timeToIndex(endTime);
+                      if (tIndex >= startIndex && tIndex < endIndex) {
+                        return { slot, isFirst: tIndex === startIndex };
+                      }
+                    }
+                    return null;
+                  };
+
+                  return (
+                    <View key={time} style={styles.gridTimeRow}>
+                      <View style={styles.gridTimeLabel}>
+                        <Text style={styles.gridTimeLabelText}>{time}</Text>
+                      </View>
+                      {DAYS_ORDER.map((day) => {
+                        const slotInfo = getSlotAtTime(day, time);
+
+                        if (slotInfo) {
+                          const { slot, isFirst } = slotInfo;
+                          const color = slot.color || DEFAULT_COLOR;
+
+                          return (
+                            <View
+                              key={`${day}-${time}`}
+                              style={[
+                                styles.gridCell,
+                                { backgroundColor: color },
+                                isFirst && styles.gridCellFirstBlock,
+                              ]}
+                            >
+                              {isFirst && (
+                                <Text style={styles.gridCellText} numberOfLines={1}>
+                                  {slot.className}
+                                </Text>
+                              )}
+                            </View>
+                          );
+                        }
+
+                        return (
+                          <View
+                            key={`${day}-${time}`}
+                            style={[styles.gridCell, styles.gridCellEmpty]}
+                          />
+                        );
+                      })}
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -430,5 +568,63 @@ const styles = StyleSheet.create({
   usageLabelActive: {
     color: '#344E41',
     fontWeight: '500',
+  },
+  scheduleCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  dayScheduleRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dayLabelContainer: {
+    width: 36,
+    marginRight: 12,
+  },
+  dayLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#344E41',
+  },
+  dayLabelClosed: {
+    color: '#A3B18A',
+  },
+  timeSlotsContainer: {
+    flex: 1,
+  },
+  timeSlotItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  timeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#588157',
+    width: 50,
+    marginRight: 8,
+  },
+  classNameText: {
+    fontSize: 14,
+    color: '#344E41',
+    flex: 1,
+  },
+  closedText: {
+    fontSize: 14,
+    color: '#A3B18A',
+    fontStyle: 'italic',
+  },
+  noClassText: {
+    fontSize: 14,
+    color: '#A3B18A',
   },
 });

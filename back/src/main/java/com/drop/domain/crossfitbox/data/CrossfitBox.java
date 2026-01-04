@@ -3,6 +3,7 @@ package com.drop.domain.crossfitbox.data;
 import com.drop.domain.base.Address;
 import com.drop.domain.base.BaseEntity;
 import com.drop.domain.fee.data.CrossfitBoxFee;
+import com.drop.domain.schedule.data.CrossfitBoxSchedule;
 import com.drop.domain.crossfitbox.dto.CrossfitBoxCreateDto;
 import com.drop.global.enums.UserRole;
 import com.drop.global.security.Authenticatable;
@@ -75,6 +76,9 @@ public class CrossfitBox extends BaseEntity implements Authenticatable {
 
     @OneToMany(mappedBy = "crossfitBox", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CrossfitBoxFee> crossfitBoxFees;
+
+    @OneToMany(mappedBy = "crossfitBox", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<CrossfitBoxSchedule> schedules;
 
     @Override
     public void setTokens(String accessToken, String refreshToken) {

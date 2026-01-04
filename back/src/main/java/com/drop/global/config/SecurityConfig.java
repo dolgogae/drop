@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .antMatchers(permitAllUrl).permitAll()
                         .antMatchers("/admin/**").hasAnyRole(ADMIN.name())
                         .antMatchers("/fee/**").hasAnyRole(GYM.name(), ADMIN.name(), TRAINER.name())
+                        .antMatchers("/schedule/**").hasAnyRole(GYM.name(), ADMIN.name())
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))

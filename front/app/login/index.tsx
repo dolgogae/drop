@@ -5,13 +5,14 @@ import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useI18n } from '../../contexts/i18n';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
-import { setTokens } from '../../store';
+import { setTokens, clearTokens, clearProfile } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
 import styles from './styles';
 
 const AUTH_TOKENS_KEY = 'auth_tokens';
 const REMEMBER_EMAIL_KEY = 'remember_email';
 const AUTO_LOGIN_KEY = 'auto_login';
+const PROFILE_KEY = 'profile';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -45,6 +46,27 @@ export default function LoginScreen() {
     };
     loadSavedSettings();
   }, []);
+
+  const fetchAndSaveProfile = async (accessToken: string) => {
+    try {
+      // 기존 프로필 먼저 삭제
+      await AsyncStorage.removeItem(PROFILE_KEY);
+
+      // 새 토큰으로 직접 프로필 조회
+      const response = await axiosInstance.get('/mypage/profile', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (response.data?.data) {
+        await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(response.data.data));
+        return response.data.data;
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+    return null;
+  };
 
   const saveLoginSettings = async (accessToken: string, refreshToken: string) => {
     try {
@@ -83,6 +105,12 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
+      // 기존 인증 정보 정리
+      dispatch(clearTokens());
+      dispatch(clearProfile());
+      await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
+
+      console.log('[Login] Attempting login with email:', email);
       const response = await axiosInstance.post('/auth/login', { email, password });
       const data = response.data;
       if (response.status === 200 && data.data?.accessToken) {
@@ -94,7 +122,14 @@ export default function LoginScreen() {
           accessToken,
           refreshToken,
         }));
-        router.replace('/');
+
+        // 프로필 조회 후 역할에 따라 라우팅
+        const profile = await fetchAndSaveProfile(accessToken);
+        if (profile?.role === 'GYM') {
+          router.replace('/admin');
+        } else {
+          router.replace('/(tabs)');
+        }
       } else {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
       }
@@ -112,6 +147,11 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    // 기존 인증 정보 정리
+    dispatch(clearTokens());
+    dispatch(clearProfile());
+    await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
+
     const result = await signInWithGoogle();
 
     if (result.success && result.idToken) {
@@ -131,7 +171,14 @@ export default function LoginScreen() {
             accessToken,
             refreshToken,
           }));
-          router.replace('/');
+
+          // 프로필 조회 후 역할에 따라 라우팅
+          const profile = await fetchAndSaveProfile(accessToken);
+          if (profile?.role === 'GYM') {
+            router.replace('/admin');
+          } else {
+            router.replace('/(tabs)');
+          }
         } else {
           Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
         }

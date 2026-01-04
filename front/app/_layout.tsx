@@ -39,6 +39,7 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+    const inAdminGroup = segments[0] === 'admin';
 
     if (!accessToken) {
       if (!inAuthGroup) {
@@ -47,11 +48,37 @@ function RootLayoutNav() {
       return;
     }
 
-    if (accessToken) {
-      if (inAuthGroup) {
-        router.replace('/(tabs)');
+    // 로그인된 상태에서 역할 기반 라우팅
+    const checkRoleAndRedirect = async () => {
+      try {
+        const profileStr = await AsyncStorage.getItem('profile');
+        if (profileStr) {
+          const profile = JSON.parse(profileStr);
+          const isGym = profile.role === 'GYM';
+
+          // GYM 사용자가 어드민이 아닌 곳에 있을 때
+          if (isGym && !inAdminGroup) {
+            router.replace('/admin');
+            return;
+          }
+
+          // 일반 사용자가 어드민에 있거나 로그인 페이지에 있을 때
+          if (!isGym && (inAdminGroup || inAuthGroup)) {
+            router.replace('/(tabs)');
+            return;
+          }
+        } else if (inAuthGroup) {
+          // 프로필이 없으면 일반 탭으로
+          router.replace('/(tabs)');
+        }
+      } catch (error) {
+        if (inAuthGroup) {
+          router.replace('/(tabs)');
+        }
       }
-    }
+    };
+
+    checkRoleAndRedirect();
   }, [isLoading, accessToken, segments]);
 
   if (isLoading) {
