@@ -3,7 +3,6 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import LanguageToggle from '../components/LanguageToggle';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { I18nProvider } from '../contexts/i18n';
 import { RootState, setTokens, store } from '../store';
@@ -87,7 +86,6 @@ function RootLayoutNav() {
 
   return (
     <View style={styles.container}>
-      <LanguageToggle />
       <Stack screenOptions={{ headerShown: false }} />
     </View>
   );
