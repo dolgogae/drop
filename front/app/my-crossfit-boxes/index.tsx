@@ -72,8 +72,8 @@ export default function MyCrossfitBoxesScreen() {
 
   const handleRemoveCrossfitBox = async (crossfitBoxId: number, crossfitBoxName: string) => {
     Alert.alert(
-      '내 크로스핏박스에서 제거',
-      `"${crossfitBoxName}"을(를) 내 크로스핏박스에서 제거하시겠습니까?`,
+      '내 Box에서 제거',
+      `"${crossfitBoxName}"을(를) 내 Box에서 제거하시겠습니까?`,
       [
         { text: '취소', style: 'cancel' },
         {
@@ -136,7 +136,7 @@ export default function MyCrossfitBoxesScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#344E41" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>내 크로스핏박스</Text>
+          <Text style={styles.headerTitle}>내 Box</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingContainer}>
@@ -152,15 +152,15 @@ export default function MyCrossfitBoxesScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#344E41" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>내 크로스핏박스</Text>
+        <Text style={styles.headerTitle}>내 Box</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       {crossfitBoxes.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="fitness-outline" size={64} color="#A3B18A" />
-          <Text style={styles.emptyText}>등록된 크로스핏박스가 없습니다</Text>
-          <Text style={styles.emptySubtext}>지도에서 크로스핏박스를 추가해보세요</Text>
+          <Text style={styles.emptyText}>등록된 Box가 없습니다</Text>
+          <Text style={styles.emptySubtext}>지도에서 Box를 추가해보세요</Text>
           <TouchableOpacity
             style={styles.goToMapButton}
             onPress={() => router.push('/(tabs)/map')}
@@ -179,7 +179,7 @@ export default function MyCrossfitBoxesScreen() {
           onRefresh={handleRefresh}
           ListHeaderComponent={
             <Text style={styles.listHeader}>
-              총 {crossfitBoxes.length}개의 크로스핏박스
+              총 {crossfitBoxes.length}개의 Box
             </Text>
           }
         />

@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -76,10 +78,44 @@ export default function MapScreen() {
     longitudeDelta: 0.05,
   });
 
-  useEffect(() => {
-    fetchCrossfitBoxesByBounds(region, true);
-    fetchMyCrossfitBoxes();
+  // 탭이 포커스될 때마다 현재 위치로 이동
+  useFocusEffect(
+    useCallback(() => {
+      const moveToCurrentLocation = async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            // 권한이 없으면 기본 위치 사용
+            fetchCrossfitBoxesByBounds(region, true);
+            return;
+          }
 
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+
+          const newRegion = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          };
+
+          setRegion(newRegion);
+          mapRef.current?.animateToRegion(newRegion, 300);
+          fetchCrossfitBoxesByBounds(newRegion, true);
+        } catch (error) {
+          console.error('현재 위치 조회 실패:', error);
+          fetchCrossfitBoxesByBounds(region, true);
+        }
+      };
+
+      moveToCurrentLocation();
+      fetchMyCrossfitBoxes();
+    }, [])
+  );
+
+  useEffect(() => {
     // 컴포넌트 언마운트 시 타이머 정리
     return () => {
       if (debounceRef.current) {
@@ -208,7 +244,7 @@ export default function MapScreen() {
       await axiosInstance.post('/member-crossfit-box', { crossfitBoxId, isFavorite: false });
       setMyCrossfitBoxIds((prev) => new Set(prev).add(crossfitBoxId));
       crossfitBoxEvents.emit();
-      Alert.alert('성공', '내 크로스핏박스에 추가되었습니다.');
+      Alert.alert('성공', '내 Box에 추가되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '추가에 실패했습니다.';
       Alert.alert('오류', message);
@@ -227,7 +263,7 @@ export default function MapScreen() {
         return next;
       });
       crossfitBoxEvents.emit();
-      Alert.alert('성공', '내 크로스핏박스에서 제거되었습니다.');
+      Alert.alert('성공', '내 Box에서 제거되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '제거에 실패했습니다.';
       Alert.alert('오류', message);
@@ -315,7 +351,7 @@ export default function MapScreen() {
             지도 기능은 모바일 앱에서 이용 가능합니다.
           </Text>
           <View style={styles.webCrossfitBoxList}>
-            <Text style={styles.webListTitle}>등록된 크로스핏박스 목록</Text>
+            <Text style={styles.webListTitle}>등록된 Box 목록</Text>
             {isInitialLoad ? (
               <ActivityIndicator size="large" color="#588157" />
             ) : (
@@ -325,7 +361,7 @@ export default function MapScreen() {
                 renderItem={renderCrossfitBoxItem}
                 style={styles.crossfitBoxList}
                 ListEmptyComponent={
-                  <Text style={styles.emptyText}>등록된 크로스핏박스가 없습니다.</Text>
+                  <Text style={styles.emptyText}>등록된 Box가 없습니다.</Text>
                 }
               />
             )}
@@ -388,7 +424,7 @@ export default function MapScreen() {
             <Text style={styles.bottomSheetTitle}>
               {selectedCluster.count === 1
                 ? selectedCluster.crossfitBoxes[0].name
-                : `주변 크로스핏박스 ${selectedCluster.count}개`}
+                : `주변 Box ${selectedCluster.count}개`}
             </Text>
             <TouchableOpacity onPress={closeBottomSheet}>
               <Text style={styles.closeButton}>닫기</Text>

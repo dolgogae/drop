@@ -33,7 +33,11 @@ public enum ResultCode {
     WITHDRAW_SUCCESS(200, "MP003", "회원 탈퇴가 완료되었습니다."),
     NOTIFICATION_UPDATE_SUCCESS(200, "MP004", "알림 설정이 변경되었습니다."),
     PROFILE_IMAGE_UPLOAD_SUCCESS(200, "MP005", "프로필 사진이 등록되었습니다."),
-    PROFILE_IMAGE_DELETE_SUCCESS(200, "MP006", "프로필 사진이 삭제되었습니다.");
+    PROFILE_IMAGE_DELETE_SUCCESS(200, "MP006", "프로필 사진이 삭제되었습니다."),
+
+    // Schedule
+    SCHEDULE_GET_SUCCESS(200, "S001", "시간표 조회 성공"),
+    SCHEDULE_UPDATE_SUCCESS(200, "S002", "시간표 수정 성공");
 
     private int status;
     private final String code;

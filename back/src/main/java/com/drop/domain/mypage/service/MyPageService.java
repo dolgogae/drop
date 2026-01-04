@@ -1,5 +1,7 @@
 package com.drop.domain.mypage.service;
 
+import com.drop.domain.crossfitbox.data.CrossfitBox;
+import com.drop.domain.crossfitbox.repository.CrossfitBoxRepository;
 import com.drop.domain.member.data.Member;
 import com.drop.domain.member.repository.MemberRepository;
 import com.drop.domain.mypage.dto.MyPageProfileDto;
@@ -8,6 +10,7 @@ import com.drop.domain.mypage.dto.PasswordChangeRequestDto;
 import com.drop.domain.mypage.dto.ProfileUpdateRequestDto;
 import com.drop.global.code.error.ErrorCode;
 import com.drop.global.code.error.exception.BusinessException;
+import com.drop.global.enums.UserRole;
 import com.drop.global.redis.RedisUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,7 @@ import java.util.UUID;
 public class MyPageService {
 
     private final MemberRepository memberRepository;
+    private final CrossfitBoxRepository crossfitBoxRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisUtils redisUtils;
 
@@ -36,8 +40,25 @@ public class MyPageService {
     private String uploadPath;
 
     @Transactional(readOnly = true)
-    public MyPageProfileDto getMyProfile(Long memberId) {
-        Member member = findMemberById(memberId);
+    public MyPageProfileDto getMyProfile(Long userId, String userRole) {
+        log.info("[MyPageService] getMyProfile called with userId: {}, userRole: {}", userId, userRole);
+
+        UserRole role = UserRole.fromKey(userRole);
+
+        if (role == UserRole.GYM) {
+            CrossfitBox crossfitBox = crossfitBoxRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_EXIST));
+            return MyPageProfileDto.builder()
+                    .id(crossfitBox.getId())
+                    .email(crossfitBox.getEmail())
+                    .username(crossfitBox.getName())
+                    .profileImage(null)
+                    .notificationEnabled(true)
+                    .role(crossfitBox.getRole().name())
+                    .build();
+        }
+
+        Member member = findMemberById(userId);
         return MyPageProfileDto.builder()
                 .id(member.getId())
                 .email(member.getEmail())

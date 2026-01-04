@@ -58,8 +58,8 @@ const translations: Record<Language, Record<string, string>> = {
     'role.title': '회원 유형 선택',
     'role.member': '일반 회원',
     'role.memberDesc': '트레이닝을 받고 싶은 회원',
-    'role.crossfitBox': '크로스핏박스',
-    'role.crossfitBoxDesc': '크로스핏박스 운영자',
+    'role.crossfitBox': 'Box',
+    'role.crossfitBoxDesc': 'Box 운영자',
 
     // Basic Info
     'info.basic': '기본 정보',
@@ -70,16 +70,16 @@ const translations: Record<Language, Record<string, string>> = {
     'member.additionalInfo': '추가 정보',
 
     // CrossfitBox
-    'crossfitBox.title': '크로스핏박스 가입',
-    'crossfitBox.info': '크로스핏박스 정보',
-    'crossfitBox.name': '크로스핏박스 이름',
+    'crossfitBox.title': 'Box 가입',
+    'crossfitBox.info': 'Box 정보',
+    'crossfitBox.name': 'Box 이름',
     'crossfitBox.phoneNumber': '전화번호',
     'crossfitBox.etcInfo': '기타 정보 (근처 역 등)',
     'crossfitBox.facilityInfo': '시설 정보',
     'crossfitBox.parking': '주차 가능',
     'crossfitBox.wear': '운동복 대여',
     'crossfitBox.locker': '락커 제공',
-    'crossfitBox.requiredFields': '크로스핏박스 이름, 주소, 전화번호는 필수입니다.',
+    'crossfitBox.requiredFields': 'Box 이름, 주소, 전화번호는 필수입니다.',
 
     // Address
     'address.title': '주소',

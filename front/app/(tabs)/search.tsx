@@ -82,7 +82,7 @@ export default function SearchScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>크로스핏박스 검색</Text>
+          <Text style={styles.title}>Box 검색</Text>
         </View>
 
         <View style={styles.inputSection}>
@@ -92,7 +92,7 @@ export default function SearchScreen() {
               style={styles.input}
               value={keyword}
               onChangeText={setKeyword}
-              placeholder="예: 크로스핏 강남"
+              placeholder="예: 크로스핏 XXX"
               placeholderTextColor="#A3B18A"
             />
             {keyword.length > 0 && (

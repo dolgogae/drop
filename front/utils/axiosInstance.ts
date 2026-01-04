@@ -17,7 +17,10 @@ axiosInstance.interceptors.request.use(
     console.log('[axios] Request URL:', config.url);
     console.log('[axios] Token exists:', !!accessToken);
 
-    if (accessToken) {
+    // 로그인/회원가입 요청에는 기존 토큰을 포함하지 않음
+    const isAuthRequest = config.url?.startsWith('/auth/');
+
+    if (accessToken && !isAuthRequest) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
