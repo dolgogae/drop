@@ -47,9 +47,6 @@ public class Member extends BaseEntity implements Authenticatable {
     @Column(name = "REFRESH_TOKEN", length = 2000)
     private String refreshToken;
 
-    // Member-specific fields
-    private String exampleColumn;
-
     @Column(name = "PROFILE_IMAGE")
     private String profileImage;
 
@@ -90,7 +87,6 @@ public class Member extends BaseEntity implements Authenticatable {
                 .email(memberCreateDto.getEmail())
                 .password(memberCreateDto.getPassword())
                 .role(memberCreateDto.getRole() != null ? memberCreateDto.getRole() : UserRole.MEMBER)
-                .exampleColumn(memberCreateDto.getExampleColumn())
                 .build();
     }
 }

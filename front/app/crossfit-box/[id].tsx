@@ -33,6 +33,7 @@ interface CrossfitBoxDetail {
   name: string;
   phoneNumber?: string;
   etcInfo?: string;
+  dropInFee?: number;
   address?: Address;
   latitude?: number;
   longitude?: number;
@@ -305,6 +306,19 @@ export default function CrossfitBoxDetailScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>추가 정보</Text>
                 <Text style={styles.infoValue}>{crossfitBox.etcInfo}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* 드랍인 비용 */}
+          {crossfitBox.dropInFee && (
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}>
+                <Ionicons name="cash-outline" size={22} color="#588157" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>드랍인 비용</Text>
+                <Text style={styles.infoValue}>{crossfitBox.dropInFee.toLocaleString()}원</Text>
               </View>
             </View>
           )}

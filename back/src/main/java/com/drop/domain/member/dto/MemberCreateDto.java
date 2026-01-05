@@ -8,11 +8,8 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @ToString
-@AllArgsConstructor
-@NoArgsConstructor
 @SuperBuilder
+@NoArgsConstructor
 @Schema(description = "멤버(고객) 생성 DTO")
 public class MemberCreateDto extends UserCreateDto {
-    // TODO: need to add member's column
-    private String exampleColumn;
 }

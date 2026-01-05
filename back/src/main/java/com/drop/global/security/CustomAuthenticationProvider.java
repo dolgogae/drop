@@ -33,7 +33,6 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             log.info("UserDetailsService returned null, which is an interface contract violation");
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }
-        /* checker */
         if(!loadedUser.isAccountNonLocked()){
             log.info("User account is locked");
             throw new LockedException("User account is locked");
@@ -46,17 +45,14 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             log.info("User account has expired");
             throw new AccountExpiredException("User account has expired");
         }
-        /* 실질적인 인증 */
         if(!passwordEncoder.matches(password, loadedUser.getPassword())){
             log.info("Password does not match stored value");
             throw new BadCredentialsException("Password does not match stored value");
         }
-        /* checker */
         if(!loadedUser.isCredentialsNonExpired()){
             log.info("User credentials have expired");
             throw new CredentialsExpiredException("User credentials have expired");
         }
-        /* 인증 완료 */
         UsernamePasswordAuthenticationToken result = new UsernamePasswordAuthenticationToken(loadedUser, null, loadedUser.getAuthorities());
         result.setDetails(authentication.getDetails());
         return result;
@@ -65,7 +61,6 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Override
     public boolean supports(Class<?> authentication) {
         return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
-        //return authentication.equals(UsernamePasswordAuthenticationToken.class);
     }
 
 }

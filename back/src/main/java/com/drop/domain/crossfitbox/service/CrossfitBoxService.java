@@ -76,7 +76,7 @@ public class CrossfitBoxService {
                 .orElseThrow(() -> new IllegalArgumentException("크로스핏박스를 찾을 수 없습니다."));
 
         // 기본 정보 업데이트
-        crossfitBox.updateInfo(updateDto.getName(), updateDto.getPhoneNumber(), updateDto.getEtcInfo());
+        crossfitBox.updateInfo(updateDto.getName(), updateDto.getPhoneNumber(), updateDto.getEtcInfo(), updateDto.getDropInFee());
 
         // 주소 업데이트
         if (updateDto.getAddress() != null) {

@@ -24,6 +24,7 @@ interface BoxInfo {
   name: string;
   phoneNumber: string;
   etcInfo: string;
+  dropInFee: number | null;
   address: {
     countryCode: string;
     postalCode: string;
@@ -65,6 +66,7 @@ export default function EditBoxScreen() {
   const [parking, setParking] = useState(false);
   const [wear, setWear] = useState(false);
   const [locker, setLocker] = useState(false);
+  const [dropInFee, setDropInFee] = useState('');
 
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
@@ -82,6 +84,7 @@ export default function EditBoxScreen() {
       setName(boxInfo.name || '');
       setPhoneNumber(boxInfo.phoneNumber || '');
       setEtcInfo(boxInfo.etcInfo || '');
+      setDropInFee(boxInfo.dropInFee ? boxInfo.dropInFee.toString() : '');
 
       if (boxInfo.address) {
         setSelectedAddress({
@@ -145,6 +148,7 @@ export default function EditBoxScreen() {
         name,
         phoneNumber,
         etcInfo,
+        dropInFee: dropInFee ? parseInt(dropInFee, 10) : null,
         address: {
           countryCode: 'KR',
           postalCode: selectedAddress.postalCode,
@@ -307,6 +311,17 @@ export default function EditBoxScreen() {
             placeholderTextColor="#A3B18A"
             value={etcInfo}
             onChangeText={setEtcInfo}
+          />
+
+          {/* Drop-in Fee */}
+          <Text style={styles.inputLabel}>{t('crossfitBox.dropInFee')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('crossfitBox.dropInFeePlaceholder')}
+            placeholderTextColor="#A3B18A"
+            value={dropInFee}
+            onChangeText={(text) => setDropInFee(text.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
           />
 
           {/* Facility Info */}

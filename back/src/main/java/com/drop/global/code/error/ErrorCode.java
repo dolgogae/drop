@@ -24,9 +24,6 @@ public enum ErrorCode {
     USER_ROLE_DOES_NOT_EXISTS(404, "M007", "member role does not exists"),
     USER_ROLE_INVALID(404, "M008", "member role invalid"),
 
-    // Fee
-    NOT_FOUND_FEE(404, "F001", "fee is not founded"),
-
     // Auth
     REFRESH_TOKEN_INVALID(400, "A001", "refresh token invalid"),
     NO_ACCESS_TOKEN(404, "A002", "no access token"),

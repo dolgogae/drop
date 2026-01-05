@@ -79,6 +79,8 @@ const translations: Record<string, string> = {
   'crossfitBox.parking': '주차 가능',
   'crossfitBox.wear': '운동복 대여',
   'crossfitBox.locker': '락커 제공',
+  'crossfitBox.dropInFee': '드랍인 비용',
+  'crossfitBox.dropInFeePlaceholder': '30000',
   'crossfitBox.requiredFields': 'Box 이름, 주소, 전화번호는 필수입니다.',
 
   // Address
