@@ -35,6 +35,8 @@ public enum ResultCode {
     NOTIFICATION_UPDATE_SUCCESS(200, "MP004", "알림 설정이 변경되었습니다."),
     PROFILE_IMAGE_UPLOAD_SUCCESS(200, "MP005", "프로필 사진이 등록되었습니다."),
     PROFILE_IMAGE_DELETE_SUCCESS(200, "MP006", "프로필 사진이 삭제되었습니다."),
+    MY_BOX_SET_SUCCESS(200, "MP007", "My Box가 설정되었습니다."),
+    MY_BOX_CLEAR_SUCCESS(200, "MP008", "My Box가 해제되었습니다."),
 
     // Schedule
     SCHEDULE_GET_SUCCESS(200, "S001", "시간표 조회 성공"),

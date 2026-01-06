@@ -1,6 +1,7 @@
 package com.drop.domain.member.data;
 
 import com.drop.domain.base.BaseEntity;
+import com.drop.domain.crossfitbox.data.CrossfitBox;
 import com.drop.domain.member.dto.MemberCreateDto;
 import com.drop.global.enums.UserRole;
 import com.drop.global.security.Authenticatable;
@@ -54,6 +55,10 @@ public class Member extends BaseEntity implements Authenticatable {
     @Builder.Default
     private Boolean notificationEnabled = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "HOME_BOX_ID")
+    private CrossfitBox homeBox;
+
     @Override
     public void setTokens(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
@@ -74,6 +79,10 @@ public class Member extends BaseEntity implements Authenticatable {
 
     public void updateNotificationEnabled(Boolean notificationEnabled) {
         this.notificationEnabled = notificationEnabled;
+    }
+
+    public void updateHomeBox(CrossfitBox homeBox) {
+        this.homeBox = homeBox;
     }
 
     public void clearTokens() {

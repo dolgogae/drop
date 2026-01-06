@@ -107,4 +107,32 @@ public class MyPageController {
         myPageService.deleteProfileImage(userDetails.getId());
         return ResponseEntity.ok(ResultResponse.of(ResultCode.PROFILE_IMAGE_DELETE_SUCCESS, null));
     }
+
+    @Operation(summary = "My Box 조회", description = "현재 설정된 My Box ID를 조회합니다.")
+    @GetMapping("/home-box")
+    public ResponseEntity<ResultResponse> getHomeBox(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long homeBoxId = myPageService.getHomeBoxId(userDetails.getId());
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.GET_MY_INFO_SUCCESS, homeBoxId));
+    }
+
+    @Operation(summary = "My Box 설정", description = "My Box를 설정합니다.")
+    @PatchMapping("/home-box/{crossfitBoxId}")
+    public ResponseEntity<ResultResponse> setHomeBox(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long crossfitBoxId
+    ) {
+        myPageService.setHomeBox(userDetails.getId(), crossfitBoxId);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_BOX_SET_SUCCESS, null));
+    }
+
+    @Operation(summary = "My Box 해제", description = "My Box를 해제합니다.")
+    @DeleteMapping("/home-box")
+    public ResponseEntity<ResultResponse> clearHomeBox(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        myPageService.setHomeBox(userDetails.getId(), null);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_BOX_CLEAR_SUCCESS, null));
+    }
 }

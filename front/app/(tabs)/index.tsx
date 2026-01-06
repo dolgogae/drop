@@ -28,7 +28,14 @@ interface MyCrossfitBoxPreview {
   togglingFavorite?: boolean;
 }
 
+interface HomeBox {
+  crossfitBoxId: number;
+  name: string;
+  addressLine1: string | null;
+}
+
 interface HomeSummary {
+  homeBox: HomeBox | null;
   nearbyCrossfitBoxCount: number;
   nearbyBasis: LocationMode;
   myCrossfitBoxesPreview: MyCrossfitBoxPreview[];
@@ -468,36 +475,57 @@ export default function HomeScreen() {
 
   const isMyCrossfitBoxesEmpty = !summary?.myCrossfitBoxesPreview || summary.myCrossfitBoxesPreview.length === 0;
 
+  const handleHomeBoxPress = () => {
+    if (summary?.homeBox) {
+      router.push(`/crossfit-box/${summary.homeBox.crossfitBoxId}` as any);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* 근처 요약 카드 */}
-        <View style={styles.summaryCard}>
-          <TouchableOpacity
-            onPress={handleGoToNearbyCrossfitBoxes}
-            activeOpacity={0.7}
-            accessibilityLabel={`근처 Box ${summary?.nearbyCrossfitBoxCount || 0}개`}
-            accessibilityRole="button"
-            disabled={!currentLocation}
-          >
-            <Text style={styles.summaryTitle}>
-              근처 Box <Text style={styles.summaryCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
-            </Text>
-          </TouchableOpacity>
-          {currentAddress && (
-            <View style={styles.locationBadge}>
-              <Ionicons name="location" size={12} color="#588157" />
-              <Text style={styles.locationBadgeText}>{currentAddress}</Text>
-            </View>
-          )}
-          <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
-            <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-            <Text style={styles.mapButtonText}>지도에서 보기</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 내 크로스핏박스 섹션 */}
+        {/* 1. My Box 섹션 (가로 꽉 차게) */}
         <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Box</Text>
+          {summary?.homeBox && (
+            <TouchableOpacity onPress={() => router.push('/my-box/select' as any)}>
+              <Text style={styles.moreButton}>변경</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {summary?.homeBox ? (
+          <TouchableOpacity
+            style={styles.homeBoxCard}
+            onPress={handleHomeBoxPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.homeBoxContent}>
+              <Ionicons name="home" size={24} color="#588157" />
+              <View style={styles.homeBoxInfo}>
+                <Text style={styles.homeBoxName}>{summary.homeBox.name}</Text>
+                {summary.homeBox.addressLine1 && (
+                  <Text style={styles.homeBoxAddress} numberOfLines={1}>
+                    {summary.homeBox.addressLine1}
+                  </Text>
+                )}
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.homeBoxEmptyCard}
+            onPress={() => router.push('/my-box/select' as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="home-outline" size={32} color="#A3B18A" />
+            <Text style={styles.homeBoxEmptyText}>My Box를 설정해보세요</Text>
+            <Text style={styles.homeBoxEmptySubText}>자주 가는 박스를 My Box로 설정하면 빠르게 확인할 수 있어요</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* 2. 즐겨찾기 섹션 */}
+        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <Text style={styles.sectionTitle}>즐겨찾기</Text>
           {(summary?.hasMoreMyCrossfitBoxes || (summary?.myCrossfitBoxesPreview && summary.myCrossfitBoxesPreview.length > 0)) && (
             <TouchableOpacity onPress={handleGoToMyCrossfitBoxes}>
@@ -507,9 +535,8 @@ export default function HomeScreen() {
         </View>
 
         {isMyCrossfitBoxesEmpty ? (
-          // 빈 상태
           <View style={styles.emptyState}>
-            <Ionicons name="fitness-outline" size={48} color="#A3B18A" />
+            <Ionicons name="star-outline" size={48} color="#A3B18A" />
             <Text style={styles.emptyText}>아직 등록된 Box가 없어요</Text>
             <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleGoToMap}>
               <Ionicons name="map-outline" size={20} color="#fff" />
@@ -517,7 +544,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          // 내 크로스핏박스 미리보기 리스트
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -534,7 +560,6 @@ export default function HomeScreen() {
                 onPress={() => handleCrossfitBoxPress(crossfitBox)}
                 activeOpacity={crossfitBox.isDeleted ? 1 : 0.7}
               >
-                {/* 별 버튼 (좌상단) */}
                 {!crossfitBox.isDeleted && (
                   <TouchableOpacity
                     style={styles.favoriteButton}
@@ -557,7 +582,6 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 )}
 
-                {/* X 버튼 (우상단) */}
                 <TouchableOpacity
                   style={styles.removeButton}
                   onPress={(e) => {
@@ -592,6 +616,38 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         )}
+
+        {/* 3. 주변 박스 섹션 */}
+        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+          <Text style={styles.sectionTitle}>주변 박스</Text>
+        </View>
+        <View style={styles.nearbyCard}>
+          <TouchableOpacity
+            onPress={handleGoToNearbyCrossfitBoxes}
+            activeOpacity={0.7}
+            accessibilityLabel={`근처 Box ${summary?.nearbyCrossfitBoxCount || 0}개`}
+            accessibilityRole="button"
+            disabled={!currentLocation}
+            style={styles.nearbyContent}
+          >
+            <View style={styles.nearbyLeft}>
+              <Ionicons name="location" size={24} color="#588157" />
+              <View style={styles.nearbyInfo}>
+                <Text style={styles.nearbyTitle}>
+                  근처 Box <Text style={styles.nearbyCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
+                </Text>
+                {currentAddress && (
+                  <Text style={styles.nearbyAddress}>{currentAddress}</Text>
+                )}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
+            <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.mapButtonText}>지도에서 보기</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -616,48 +672,98 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-  // 근처 요약 카드
-  summaryCard: {
+  // 홈 박스 카드
+  homeBoxCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
-  summaryTitle: {
-    fontSize: 24,
+  homeBoxContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  homeBoxInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  homeBoxName: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#344E41',
   },
-  summaryCount: {
-    fontSize: 32,
+  homeBoxAddress: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  homeBoxEmptyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  homeBoxEmptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    fontWeight: '500',
+  },
+  homeBoxEmptySubText: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+
+  // 주변 박스 카드
+  nearbyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  nearbyContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  nearbyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  nearbyInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  nearbyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#344E41',
+  },
+  nearbyCount: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#588157',
   },
-  summarySubtitle: {
-    fontSize: 14,
-    color: '#A3B18A',
-    marginTop: 4,
-  },
-  locationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f4f0',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
-    alignSelf: 'flex-start',
-  },
-  locationBadgeText: {
-    fontSize: 12,
-    color: '#588157',
-    marginLeft: 4,
-    fontWeight: '500',
+  nearbyAddress: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
   },
   mapButton: {
     flexDirection: 'row',
@@ -666,7 +772,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#588157',
     borderRadius: 12,
     paddingVertical: 14,
-    marginTop: 20,
+    marginTop: 16,
   },
   mapButtonText: {
     color: '#fff',
