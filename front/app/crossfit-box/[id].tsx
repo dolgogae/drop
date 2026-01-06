@@ -33,6 +33,7 @@ interface CrossfitBoxDetail {
   name: string;
   phoneNumber?: string;
   etcInfo?: string;
+  dropInFee?: number;
   address?: Address;
   latitude?: number;
   longitude?: number;
@@ -90,6 +91,8 @@ export default function CrossfitBoxDetailScreen() {
   const [schedule, setSchedule] = useState<ScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSettingHomeBox, setIsSettingHomeBox] = useState(false);
+  const [currentHomeBoxId, setCurrentHomeBoxId] = useState<number | null>(null);
 
   // 토스트 상태
   const [toast, setToast] = useState<{ visible: boolean; message: string; time: string; color: string; x: number; y: number }>({
@@ -138,8 +141,18 @@ export default function CrossfitBoxDetailScreen() {
     if (id) {
       fetchCrossfitBoxDetail();
       fetchSchedule();
+      fetchCurrentHomeBox();
     }
   }, [id]);
+
+  const fetchCurrentHomeBox = async () => {
+    try {
+      const response = await axiosInstance.get('/mypage/home-box');
+      setCurrentHomeBoxId(response.data?.data ?? null);
+    } catch (err) {
+      console.error('My Box 조회 실패:', err);
+    }
+  };
 
   const fetchCrossfitBoxDetail = async () => {
     try {
@@ -197,6 +210,32 @@ export default function CrossfitBoxDetailScreen() {
       } else {
         Linking.openURL(naverMapWebUrl);
       }
+    }
+  };
+
+  const isCurrentHomeBox = crossfitBox?.id === currentHomeBoxId;
+
+  const handleToggleHomeBox = async () => {
+    if (!crossfitBox) return;
+
+    setIsSettingHomeBox(true);
+    try {
+      if (isCurrentHomeBox) {
+        // 해제
+        await axiosInstance.delete('/mypage/home-box');
+        setCurrentHomeBoxId(null);
+        Alert.alert('My Box 해제', `${crossfitBox.name}이(가) My Box에서 해제되었습니다.`);
+      } else {
+        // 설정
+        await axiosInstance.patch(`/mypage/home-box/${crossfitBox.id}`);
+        setCurrentHomeBoxId(crossfitBox.id);
+        Alert.alert('My Box 설정', `${crossfitBox.name}이(가) My Box로 설정되었습니다.`);
+      }
+    } catch (err: any) {
+      console.error('My Box 변경 실패:', err);
+      Alert.alert('오류', 'My Box 변경에 실패했습니다.');
+    } finally {
+      setIsSettingHomeBox(false);
     }
   };
 
@@ -264,6 +303,26 @@ export default function CrossfitBoxDetailScreen() {
         {/* 크로스핏박스 이름 */}
         <View style={styles.nameSection}>
           <Text style={styles.crossfitBoxName}>{crossfitBox.name}</Text>
+          <TouchableOpacity
+            style={[styles.homeBoxButton, isCurrentHomeBox && styles.homeBoxButtonActive]}
+            onPress={handleToggleHomeBox}
+            disabled={isSettingHomeBox}
+          >
+            {isSettingHomeBox ? (
+              <ActivityIndicator size="small" color={isCurrentHomeBox ? '#fff' : '#588157'} />
+            ) : (
+              <>
+                <Ionicons
+                  name={isCurrentHomeBox ? 'home' : 'home-outline'}
+                  size={18}
+                  color={isCurrentHomeBox ? '#fff' : '#588157'}
+                />
+                <Text style={[styles.homeBoxButtonText, isCurrentHomeBox && styles.homeBoxButtonTextActive]}>
+                  {isCurrentHomeBox ? 'My Box 해제' : 'My Box로 설정'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* 기본 정보 */}
@@ -305,6 +364,19 @@ export default function CrossfitBoxDetailScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>추가 정보</Text>
                 <Text style={styles.infoValue}>{crossfitBox.etcInfo}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* 드랍인 비용 */}
+          {crossfitBox.dropInFee && (
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}>
+                <Ionicons name="cash-outline" size={22} color="#588157" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>드랍인 비용</Text>
+                <Text style={styles.infoValue}>{crossfitBox.dropInFee.toLocaleString()}원</Text>
               </View>
             </View>
           )}
@@ -639,6 +711,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#344E41',
     textAlign: 'center',
+  },
+  homeBoxButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#588157',
+    backgroundColor: '#f0f7f0',
+  },
+  homeBoxButtonActive: {
+    backgroundColor: '#588157',
+    borderColor: '#588157',
+  },
+  homeBoxButtonText: {
+    fontSize: 14,
+    color: '#588157',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  homeBoxButtonTextActive: {
+    color: '#fff',
   },
   infoCard: {
     backgroundColor: '#fff',

@@ -1,6 +1,7 @@
 package com.drop.domain.member.data;
 
 import com.drop.domain.base.BaseEntity;
+import com.drop.domain.crossfitbox.data.CrossfitBox;
 import com.drop.domain.member.dto.MemberCreateDto;
 import com.drop.global.enums.UserRole;
 import com.drop.global.security.Authenticatable;
@@ -47,15 +48,16 @@ public class Member extends BaseEntity implements Authenticatable {
     @Column(name = "REFRESH_TOKEN", length = 2000)
     private String refreshToken;
 
-    // Member-specific fields
-    private String exampleColumn;
-
     @Column(name = "PROFILE_IMAGE")
     private String profileImage;
 
     @Column(name = "NOTIFICATION_ENABLED")
     @Builder.Default
     private Boolean notificationEnabled = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "HOME_BOX_ID")
+    private CrossfitBox homeBox;
 
     @Override
     public void setTokens(String accessToken, String refreshToken) {
@@ -79,6 +81,10 @@ public class Member extends BaseEntity implements Authenticatable {
         this.notificationEnabled = notificationEnabled;
     }
 
+    public void updateHomeBox(CrossfitBox homeBox) {
+        this.homeBox = homeBox;
+    }
+
     public void clearTokens() {
         this.accessToken = null;
         this.refreshToken = null;
@@ -90,7 +96,6 @@ public class Member extends BaseEntity implements Authenticatable {
                 .email(memberCreateDto.getEmail())
                 .password(memberCreateDto.getPassword())
                 .role(memberCreateDto.getRole() != null ? memberCreateDto.getRole() : UserRole.MEMBER)
-                .exampleColumn(memberCreateDto.getExampleColumn())
                 .build();
     }
 }

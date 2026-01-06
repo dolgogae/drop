@@ -2,7 +2,6 @@ package com.drop.domain.crossfitbox.data;
 
 import com.drop.domain.base.Address;
 import com.drop.domain.base.BaseEntity;
-import com.drop.domain.fee.data.CrossfitBoxFee;
 import com.drop.domain.schedule.data.CrossfitBoxSchedule;
 import com.drop.domain.crossfitbox.dto.CrossfitBoxCreateDto;
 import com.drop.global.enums.UserRole;
@@ -55,6 +54,7 @@ public class CrossfitBox extends BaseEntity implements Authenticatable {
     private String name;
     private String phoneNumber;
     private String etcInfo;
+    private Integer dropInFee;
 
     @Embedded
     @AttributeOverrides({
@@ -73,9 +73,6 @@ public class CrossfitBox extends BaseEntity implements Authenticatable {
 
     @Embedded
     private UsageInfo usageInfo;
-
-    @OneToMany(mappedBy = "crossfitBox", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<CrossfitBoxFee> crossfitBoxFees;
 
     @OneToMany(mappedBy = "crossfitBox", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CrossfitBoxSchedule> schedules;
@@ -109,7 +106,7 @@ public class CrossfitBox extends BaseEntity implements Authenticatable {
         this.longitude = longitude;
     }
 
-    public void updateInfo(String name, String phoneNumber, String etcInfo) {
+    public void updateInfo(String name, String phoneNumber, String etcInfo, Integer dropInFee) {
         if (name != null) {
             this.name = name;
         }
@@ -118,6 +115,9 @@ public class CrossfitBox extends BaseEntity implements Authenticatable {
         }
         if (etcInfo != null) {
             this.etcInfo = etcInfo;
+        }
+        if (dropInFee != null) {
+            this.dropInFee = dropInFee;
         }
     }
 

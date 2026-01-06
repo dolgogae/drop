@@ -8,8 +8,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @ToString
 @SuperBuilder
-@AllArgsConstructor
 @NoArgsConstructor
 public class MemberDto extends UserDto {
-    private String exampleColumn;
 }

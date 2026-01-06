@@ -26,6 +26,9 @@ public class CrossfitBoxUpdateDto {
     @Schema(description = "기타 정보 (가까운 역 등)", example = "강남역 2번 출구 도보 5분")
     private String etcInfo;
 
+    @Schema(description = "드랍인 비용 (원)", example = "30000")
+    private Integer dropInFee;
+
     @Valid
     @Schema(description = "주소 정보")
     private AddressDto address;

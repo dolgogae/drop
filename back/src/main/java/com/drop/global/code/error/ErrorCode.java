@@ -24,9 +24,6 @@ public enum ErrorCode {
     USER_ROLE_DOES_NOT_EXISTS(404, "M007", "member role does not exists"),
     USER_ROLE_INVALID(404, "M008", "member role invalid"),
 
-    // Fee
-    NOT_FOUND_FEE(404, "F001", "fee is not founded"),
-
     // Auth
     REFRESH_TOKEN_INVALID(400, "A001", "refresh token invalid"),
     NO_ACCESS_TOKEN(404, "A002", "no access token"),
@@ -43,7 +40,10 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED(500, "MP002", "파일 업로드에 실패했습니다."),
     FILE_NOT_FOUND(404, "MP003", "파일을 찾을 수 없습니다."),
     INVALID_FILE_TYPE(400, "MP004", "허용되지 않는 파일 형식입니다."),
-    FILE_SIZE_EXCEEDED(400, "MP005", "파일 크기가 제한을 초과했습니다.");
+    FILE_SIZE_EXCEEDED(400, "MP005", "파일 크기가 제한을 초과했습니다."),
+
+    // CrossfitBox
+    CROSSFIT_BOX_NOT_FOUND(404, "CB001", "크로스핏박스를 찾을 수 없습니다.");
 
     private int status;
     private final String code;

@@ -149,6 +149,25 @@ public class MyPageService {
         }
     }
 
+    @Transactional
+    public void setHomeBox(Long memberId, Long crossfitBoxId) {
+        Member member = findMemberById(memberId);
+
+        if (crossfitBoxId == null) {
+            member.updateHomeBox(null);
+        } else {
+            CrossfitBox crossfitBox = crossfitBoxRepository.findById(crossfitBoxId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CROSSFIT_BOX_NOT_FOUND));
+            member.updateHomeBox(crossfitBox);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Long getHomeBoxId(Long memberId) {
+        Member member = findMemberById(memberId);
+        return member.getHomeBox() != null ? member.getHomeBox().getId() : null;
+    }
+
     private Member findMemberById(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_EXIST));

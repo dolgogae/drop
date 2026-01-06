@@ -16,6 +16,7 @@ public class CrossfitBoxDto extends UserDto {
     private String name;
     private String phoneNumber;
     private String etcInfo;    // nearby any stations
+    private Integer dropInFee;
     private AddressDto address;
     private Double latitude;
     private Double longitude;
