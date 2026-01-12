@@ -1,4 +1,4 @@
-package com.drop.domain.home.dto;
+package com.drop.domain.dashboard.dto;
 
 import com.drop.domain.membercrossfitbox.dto.MemberCrossfitBoxPreviewDto;
 import com.drop.global.enums.LocationMode;
@@ -11,8 +11,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HomeSummaryDto {
-    private HomeBoxDto homeBox;
+public class DashboardSummaryDto {
+    private DashboardBoxDto homeBox;
     private Integer nearbyCrossfitBoxCount;
     private LocationMode nearbyBasis;
     private List<MemberCrossfitBoxPreviewDto> myCrossfitBoxesPreview;
@@ -23,7 +23,7 @@ public class HomeSummaryDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class HomeBoxDto {
+    public static class DashboardBoxDto {
         private Long crossfitBoxId;
         private String name;
         private String addressLine1;

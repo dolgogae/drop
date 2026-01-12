@@ -1,8 +1,8 @@
-package com.drop.unit.domain.home.controller;
+package com.drop.unit.domain.dashboard.controller;
 
-import com.drop.domain.home.controller.HomeController;
-import com.drop.domain.home.dto.HomeSummaryDto;
-import com.drop.domain.home.service.HomeService;
+import com.drop.domain.dashboard.controller.DashboardController;
+import com.drop.domain.dashboard.dto.DashboardSummaryDto;
+import com.drop.domain.dashboard.service.DashboardService;
 import com.drop.global.enums.LocationMode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,55 +23,55 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
-class HomeControllerTest {
+class DashboardControllerTest {
 
     private MockMvc mockMvc;
 
     @Mock
-    private HomeService homeService;
+    private DashboardService dashboardService;
 
     @InjectMocks
-    private HomeController homeController;
+    private DashboardController dashboardController;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(homeController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(dashboardController).build();
     }
 
     @Test
-    @DisplayName("홈 요약 조회 - 비로그인")
-    void getHomeSummary_anonymous() throws Exception {
+    @DisplayName("대시보드 요약 조회 - 비로그인")
+    void getDashboardSummary_anonymous() throws Exception {
         // given
-        HomeSummaryDto dto = HomeSummaryDto.builder()
+        DashboardSummaryDto dto = DashboardSummaryDto.builder()
                 .nearbyCrossfitBoxCount(10)
                 .nearbyBasis(LocationMode.CURRENT)
                 .myCrossfitBoxesPreview(List.of())
                 .hasMoreMyCrossfitBoxes(false)
                 .build();
 
-        when(homeService.getHomeSummary(any(), any(), any(), any())).thenReturn(dto);
+        when(dashboardService.getDashboardSummary(any(), any(), any(), any())).thenReturn(dto);
 
         // when & then
-        mockMvc.perform(get("/home/summary"))
+        mockMvc.perform(get("/dashboard/summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nearbyCrossfitBoxCount").value(10));
     }
 
     @Test
-    @DisplayName("홈 요약 조회 - 위치 정보 포함")
-    void getHomeSummary_withLocation() throws Exception {
+    @DisplayName("대시보드 요약 조회 - 위치 정보 포함")
+    void getDashboardSummary_withLocation() throws Exception {
         // given
-        HomeSummaryDto dto = HomeSummaryDto.builder()
+        DashboardSummaryDto dto = DashboardSummaryDto.builder()
                 .nearbyCrossfitBoxCount(5)
                 .nearbyBasis(LocationMode.CURRENT)
                 .myCrossfitBoxesPreview(List.of())
                 .hasMoreMyCrossfitBoxes(false)
                 .build();
 
-        when(homeService.getHomeSummary(any(), any(), any(), any())).thenReturn(dto);
+        when(dashboardService.getDashboardSummary(any(), any(), any(), any())).thenReturn(dto);
 
         // when & then
-        mockMvc.perform(get("/home/summary")
+        mockMvc.perform(get("/dashboard/summary")
                         .param("locationMode", "CURRENT")
                         .param("latGrid", "37.5")
                         .param("lngGrid", "127.0"))

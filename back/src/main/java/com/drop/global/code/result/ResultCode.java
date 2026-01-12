@@ -19,8 +19,8 @@ public enum ResultCode {
     GYM_DETAIL_SUCCESS(200, "G002", "체육관 상세 조회 성공"),
     GYM_UPDATE_SUCCESS(200, "G003", "박스 정보 수정 성공"),
 
-    // Home
-    HOME_SUMMARY_SUCCESS(200, "H001", "홈 화면 정보 조회 성공"),
+    // Dashboard
+    DASHBOARD_SUMMARY_SUCCESS(200, "D001", "대시보드 정보 조회 성공"),
 
     // My Gym (Favorite)
     MY_GYM_LIST_SUCCESS(200, "F001", "내 체육관 목록 조회 성공"),

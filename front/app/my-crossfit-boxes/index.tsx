@@ -163,7 +163,7 @@ export default function MyCrossfitBoxesScreen() {
           <Text style={styles.emptySubtext}>지도에서 Box를 추가해보세요</Text>
           <TouchableOpacity
             style={styles.goToMapButton}
-            onPress={() => router.push('/(tabs)/map')}
+            onPress={() => router.push('/(tabs)')}
           >
             <Ionicons name="map-outline" size={18} color="#fff" />
             <Text style={styles.goToMapButtonText}>지도로 이동</Text>
