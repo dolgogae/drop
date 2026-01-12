@@ -1,7 +1,7 @@
-package com.drop.domain.home.controller;
+package com.drop.domain.dashboard.controller;
 
-import com.drop.domain.home.dto.HomeSummaryDto;
-import com.drop.domain.home.service.HomeService;
+import com.drop.domain.dashboard.dto.DashboardSummaryDto;
+import com.drop.domain.dashboard.service.DashboardService;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
 import com.drop.global.enums.LocationMode;
@@ -17,17 +17,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Home", description = "홈 화면 API")
+@Tag(name = "Dashboard", description = "대시보드 API")
 @RestController
-@RequestMapping("/home")
+@RequestMapping("/dashboard")
 @RequiredArgsConstructor
-public class HomeController {
+public class DashboardController {
 
-    private final HomeService homeService;
+    private final DashboardService dashboardService;
 
-    @Operation(summary = "홈 화면 요약 조회", description = "홈 화면에 필요한 근처 체육관 개수와 내 체육관 미리보기를 조회합니다.")
+    @Operation(summary = "대시보드 요약 조회", description = "대시보드에 필요한 근처 체육관 개수와 내 체육관 미리보기를 조회합니다.")
     @GetMapping("/summary")
-    public ResponseEntity<ResultResponse> getHomeSummary(
+    public ResponseEntity<ResultResponse> getDashboardSummary(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "위치 모드 (CURRENT: 현재 위치, LAST: 마지막 위치)")
             @RequestParam(required = false) String locationMode,
@@ -39,7 +39,7 @@ public class HomeController {
         Long memberId = userDetails != null ? userDetails.getId() : null;
 
         LocationMode mode = LocationMode.fromValue(locationMode);
-        HomeSummaryDto summary = homeService.getHomeSummary(memberId, mode, latGrid, lngGrid);
-        return ResponseEntity.ok(ResultResponse.of(ResultCode.HOME_SUMMARY_SUCCESS, summary));
+        DashboardSummaryDto summary = dashboardService.getDashboardSummary(memberId, mode, latGrid, lngGrid);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.DASHBOARD_SUMMARY_SUCCESS, summary));
     }
 }

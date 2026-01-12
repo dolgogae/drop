@@ -1,10 +1,10 @@
-package com.drop.unit.domain.home.service;
+package com.drop.unit.domain.dashboard.service;
 
 import com.drop.domain.base.Address;
 import com.drop.domain.crossfitbox.data.CrossfitBox;
 import com.drop.domain.crossfitbox.service.CrossfitBoxService;
-import com.drop.domain.home.dto.HomeSummaryDto;
-import com.drop.domain.home.service.HomeService;
+import com.drop.domain.dashboard.dto.DashboardSummaryDto;
+import com.drop.domain.dashboard.service.DashboardService;
 import com.drop.domain.member.data.Member;
 import com.drop.domain.member.repository.MemberRepository;
 import com.drop.domain.membercrossfitbox.dto.MemberCrossfitBoxPreviewDto;
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HomeServiceTest {
+class DashboardServiceTest {
 
     @Mock
     private CrossfitBoxService crossfitBoxService;
@@ -37,7 +37,7 @@ class HomeServiceTest {
     private MemberRepository memberRepository;
 
     @InjectMocks
-    private HomeService homeService;
+    private DashboardService dashboardService;
 
     private Member member;
     private CrossfitBox homeBox;
@@ -59,8 +59,8 @@ class HomeServiceTest {
     }
 
     @Test
-    @DisplayName("홈 요약 조회 - 홈박스 있음")
-    void getHomeSummary_withHomeBox() {
+    @DisplayName("대시보드 요약 조회 - 홈박스 있음")
+    void getDashboardSummary_withHomeBox() {
         // given
         Long memberId = 1L;
         LocationMode locationMode = LocationMode.CURRENT;
@@ -81,7 +81,7 @@ class HomeServiceTest {
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
 
         // when
-        HomeSummaryDto result = homeService.getHomeSummary(memberId, locationMode, latGrid, lngGrid);
+        DashboardSummaryDto result = dashboardService.getDashboardSummary(memberId, locationMode, latGrid, lngGrid);
 
         // then
         assertThat(result).isNotNull();
@@ -94,8 +94,8 @@ class HomeServiceTest {
     }
 
     @Test
-    @DisplayName("홈 요약 조회 - 홈박스 없음")
-    void getHomeSummary_withoutHomeBox() {
+    @DisplayName("대시보드 요약 조회 - 홈박스 없음")
+    void getDashboardSummary_withoutHomeBox() {
         // given
         Long memberId = 1L;
         Member memberWithoutHomeBox = Member.builder()
@@ -110,7 +110,7 @@ class HomeServiceTest {
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(memberWithoutHomeBox));
 
         // when
-        HomeSummaryDto result = homeService.getHomeSummary(memberId, null, null, null);
+        DashboardSummaryDto result = dashboardService.getDashboardSummary(memberId, null, null, null);
 
         // then
         assertThat(result).isNotNull();
@@ -119,8 +119,8 @@ class HomeServiceTest {
     }
 
     @Test
-    @DisplayName("홈 요약 조회 - 회원 없음")
-    void getHomeSummary_memberNotFound() {
+    @DisplayName("대시보드 요약 조회 - 회원 없음")
+    void getDashboardSummary_memberNotFound() {
         // given
         Long memberId = 999L;
 
@@ -130,7 +130,7 @@ class HomeServiceTest {
         when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
         // when
-        HomeSummaryDto result = homeService.getHomeSummary(memberId, null, null, null);
+        DashboardSummaryDto result = dashboardService.getDashboardSummary(memberId, null, null, null);
 
         // then
         assertThat(result).isNotNull();
@@ -138,8 +138,8 @@ class HomeServiceTest {
     }
 
     @Test
-    @DisplayName("홈 요약 조회 - 5개 초과 크로스핏박스")
-    void getHomeSummary_hasMoreCrossfitBoxes() {
+    @DisplayName("대시보드 요약 조회 - 5개 초과 크로스핏박스")
+    void getDashboardSummary_hasMoreCrossfitBoxes() {
         // given
         Long memberId = 1L;
 
@@ -149,7 +149,7 @@ class HomeServiceTest {
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
 
         // when
-        HomeSummaryDto result = homeService.getHomeSummary(memberId, LocationMode.LAST, null, null);
+        DashboardSummaryDto result = dashboardService.getDashboardSummary(memberId, LocationMode.LAST, null, null);
 
         // then
         assertThat(result.getHasMoreMyCrossfitBoxes()).isTrue();

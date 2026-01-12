@@ -1,654 +1,443 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  AppState,
-  AppStateStatus,
-  Linking,
+  Alert,
+  Dimensions,
+  FlatList,
   Platform,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { HomeState, LocationMode, LocationModeText } from '../../constants/enums';
 import axiosInstance from '../../utils/axiosInstance';
 import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
 
-interface MyCrossfitBoxPreview {
-  crossfitBoxId: number;
-  name: string;
-  isFavorite: boolean;
-  isDeleted: boolean;
-  togglingFavorite?: boolean;
+let MapView: any = null;
+let Marker: any = null;
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
 }
 
-interface HomeBox {
-  crossfitBoxId: number;
-  name: string;
-  addressLine1: string | null;
-}
-
-interface HomeSummary {
-  homeBox: HomeBox | null;
-  nearbyCrossfitBoxCount: number;
-  nearbyBasis: LocationMode;
-  myCrossfitBoxesPreview: MyCrossfitBoxPreview[];
-  hasMoreMyCrossfitBoxes: boolean;
-}
-
-const snapToGrid = (value: number, gridSize: number = 0.005): number => {
-  return Math.round(value / gridSize) * gridSize;
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
 };
 
-export default function HomeScreen() {
+interface CrossfitBox {
+  id: number;
+  name: string;
+  location: string;
+  phoneNumber: string;
+  latitude: number;
+  longitude: number;
+  isMyCrossfitBox?: boolean;
+}
+
+interface Cluster {
+  id: string;
+  latitude: number;
+  longitude: number;
+  crossfitBoxes: CrossfitBox[];
+  count: number;
+}
+
+const { width, height } = Dimensions.get('window');
+const CLUSTER_DISTANCE = 0.01; // 클러스터링 거리 (약 1km)
+
+const DEBOUNCE_DELAY = 300; // 디바운스 딜레이 (ms)
+
+export default function MapScreen() {
   const router = useRouter();
-  const [homeState, setHomeState] = useState<HomeState>(HomeState.LOADING);
-  const [summary, setSummary] = useState<HomeSummary | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const { lat, lng, t } = useLocalSearchParams<{ lat?: string; lng?: string; t?: string }>();
+  const mapRef = useRef<typeof MapView>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [crossfitBoxes, setCrossfitBoxes] = useState<CrossfitBox[]>([]);
+  const [myCrossfitBoxIds, setMyCrossfitBoxIds] = useState<Set<number>>(new Set());
+  const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [addingCrossfitBoxId, setAddingCrossfitBoxId] = useState<number | null>(null);
 
-  // 위치 권한 확인 및 요청
-  const checkLocationPermission = useCallback(async () => {
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      setLocationPermission(status);
-      return status;
-    } catch (error) {
-      console.error('위치 권한 확인 실패:', error);
-      return null;
-    }
-  }, []);
+  // 파라미터로 전달된 위치가 있으면 사용, 없으면 서울 기본값
+  const initialLat = lat ? parseFloat(lat) : 37.5665;
+  const initialLng = lng ? parseFloat(lng) : 126.978;
 
-  // 위치 권한 요청
-  const requestLocationPermission = useCallback(async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status);
+  const [region, setRegion] = useState<Region>({
+    latitude: initialLat,
+    longitude: initialLng,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  });
 
-      if (status === Location.PermissionStatus.GRANTED) {
-        // 권한 허용되면 위치 가져오기
-        await getCurrentLocation();
-        fetchHomeSummary();
-      } else {
-        setHomeState(HomeState.PERMISSION_DENIED);
-      }
-    } catch (error) {
-      console.error('위치 권한 요청 실패:', error);
-      setHomeState(HomeState.PERMISSION_DENIED);
-    }
-  }, []);
-
-  // 현재 위치 가져오기
-  const getCurrentLocation = useCallback(async () => {
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const lat = snapToGrid(location.coords.latitude);
-      const lng = snapToGrid(location.coords.longitude);
-
-      setCurrentLocation({ lat, lng });
-
-      // 좌표를 주소로 변환
-      try {
-        const [address] = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-        if (address) {
-          // 한국 주소: region(시/도), subregion(구), district(동)
-          let displayAddress = '';
-          if (address.region) {
-            const region = address.region.replace(/특별시|광역시|도$/g, '');
-            // subregion(구) 또는 district(동) 사용
-            const detail = address.subregion || address.district || '';
-            displayAddress = detail ? `${region} ${detail}` : region;
-          } else if (address.city) {
-            displayAddress = address.district ? `${address.city} ${address.district}` : address.city;
-          }
-          setCurrentAddress(displayAddress || null);
-        }
-      } catch (geocodeError) {
-        console.error('주소 변환 실패:', geocodeError);
-      }
-
-      return { lat, lng };
-    } catch (error) {
-      console.error('위치 가져오기 실패:', error);
-      return null;
-    }
-  }, []);
-
-  // 홈 데이터 조회
-  const fetchHomeSummary = useCallback(async (location?: { lat: number; lng: number } | null) => {
-    try {
-      setHomeState(HomeState.LOADING);
-      setErrorMessage('');
-
-      const params: Record<string, any> = {};
-
-      const loc = location || currentLocation;
-      if (loc) {
-        params.latGrid = loc.lat;
-        params.lngGrid = loc.lng;
-        params.locationMode = LocationMode.CURRENT;
-      }
-
-      const response = await axiosInstance.get('/home/summary', { params });
-
-      if (response.data?.data) {
-        const data: HomeSummary = response.data.data;
-        setSummary(data);
-        setHomeState(HomeState.SUCCESS);
-      } else {
-        setHomeState(HomeState.ERROR);
-        setErrorMessage('데이터를 불러올 수 없습니다.');
-      }
-    } catch (error: any) {
-      console.error('홈 데이터 조회 실패:', error);
-      setHomeState(HomeState.ERROR);
-      setErrorMessage('네트워크 오류가 발생했습니다.');
-    }
-  }, [currentLocation]);
-
-  const isInitialMount = useRef(true);
-
-  // 초기 로딩
-  useEffect(() => {
-    const initializeHome = async () => {
-      const permissionStatus = await checkLocationPermission();
-
-      if (permissionStatus === Location.PermissionStatus.GRANTED) {
-        const location = await getCurrentLocation();
-        await fetchHomeSummary(location);
-      } else if (permissionStatus === Location.PermissionStatus.DENIED) {
-        // 이전에 거부한 경우 - 권한 없이 데이터 로드
-        setHomeState(HomeState.PERMISSION_DENIED);
-      } else {
-        // 아직 결정하지 않은 경우 - 권한 요청
-        await requestLocationPermission();
-      }
-    };
-
-    initializeHome();
-  }, []);
-
-  // 탭 포커스 시 데이터 갱신
+  // 탭이 포커스될 때마다 현재 위치로 이동
   useFocusEffect(
     useCallback(() => {
-      // 초기 마운트 시에는 스킵 (useEffect에서 이미 처리)
-      if (isInitialMount.current) {
-        isInitialMount.current = false;
-        return;
-      }
-
-      // 탭에 다시 포커스될 때 데이터 갱신 (로딩 표시 없이 백그라운드에서)
-      const refreshData = async () => {
+      const moveToCurrentLocation = async () => {
         try {
-          const { status } = await Location.getForegroundPermissionsAsync();
-
-          const params: Record<string, any> = {};
-          if (status === Location.PermissionStatus.GRANTED) {
-            const location = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            });
-            params.latGrid = snapToGrid(location.coords.latitude);
-            params.lngGrid = snapToGrid(location.coords.longitude);
-            params.locationMode = LocationMode.CURRENT;
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            // 권한이 없으면 기본 위치 사용
+            fetchCrossfitBoxesByBounds(region, true);
+            return;
           }
 
-          const response = await axiosInstance.get('/home/summary', { params });
-          if (response.data?.data) {
-            setSummary(response.data.data);
-          }
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+
+          const newRegion = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          };
+
+          setRegion(newRegion);
+          mapRef.current?.animateToRegion(newRegion, 300);
+          fetchCrossfitBoxesByBounds(newRegion, true);
         } catch (error) {
-          console.error('홈 데이터 갱신 실패:', error);
+          console.error('현재 위치 조회 실패:', error);
+          fetchCrossfitBoxesByBounds(region, true);
         }
       };
 
-      refreshData();
+      moveToCurrentLocation();
+      fetchMyCrossfitBoxes();
     }, [])
   );
 
-  // 앱 포그라운드 복귀 시 데이터 갱신
   useEffect(() => {
-    let lastFetchTime = Date.now();
-    const REFRESH_INTERVAL = 10 * 60 * 1000; // 10분
-
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        // 권한 상태 다시 확인 (설정에서 변경했을 수 있음)
-        const status = await checkLocationPermission();
-
-        const now = Date.now();
-        if (now - lastFetchTime > REFRESH_INTERVAL) {
-          if (status === Location.PermissionStatus.GRANTED) {
-            const location = await getCurrentLocation();
-            fetchHomeSummary(location);
-          } else {
-            fetchHomeSummary();
-          }
-          lastFetchTime = now;
-        }
+    // 컴포넌트 언마운트 시 타이머 정리
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
       }
     };
+  }, []);
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription.remove();
-  }, [fetchHomeSummary, checkLocationPermission, getCurrentLocation]);
-
-  // 크로스핏박스 변경 이벤트 구독 (맵에서 추가/제거 시 동기화)
+  // 파라미터로 위치가 전달되면 해당 위치로 이동
   useEffect(() => {
-    const refreshCrossfitBoxes = async () => {
-      try {
-        const params: Record<string, any> = {};
-        if (currentLocation) {
-          params.latGrid = currentLocation.lat;
-          params.lngGrid = currentLocation.lng;
-          params.locationMode = LocationMode.CURRENT;
-        }
-        const response = await axiosInstance.get('/home/summary', { params });
-        if (response.data?.data) {
-          setSummary(response.data.data);
-        }
-      } catch (error) {
-        console.error('크로스핏박스 데이터 갱신 실패:', error);
-      }
-    };
+    if (lat && lng) {
+      const newLat = parseFloat(lat);
+      const newLng = parseFloat(lng);
+      const newRegion = {
+        latitude: newLat,
+        longitude: newLng,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+      setRegion(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 300);
+      fetchCrossfitBoxesByBounds(newRegion, true);
+    }
+  }, [lat, lng, t]);
 
-    const unsubscribe = crossfitBoxEvents.subscribe(refreshCrossfitBoxes);
+  // 크로스핏박스 변경 이벤트 구독 (홈에서 제거 시 동기화)
+  useEffect(() => {
+    const unsubscribe = crossfitBoxEvents.subscribe(() => {
+      fetchMyCrossfitBoxes();
+    });
     return unsubscribe;
-  }, [currentLocation]);
+  }, []);
 
-  const handleGoToMap = () => {
-    if (currentLocation) {
-      router.push({
-        pathname: '/(tabs)/map',
-        params: {
-          lat: currentLocation.lat,
-          lng: currentLocation.lng,
-          t: Date.now(),
-        },
+  // 클러스터링을 useMemo로 최적화
+  const clusters = useMemo(() => {
+    if (crossfitBoxes.length === 0) return [];
+
+    const clusterDistance = CLUSTER_DISTANCE * (region.latitudeDelta / 0.1);
+    const clustered: Cluster[] = [];
+    const used = new Set<number>();
+
+    crossfitBoxes.forEach((crossfitBox, index) => {
+      if (used.has(index)) return;
+
+      const cluster: Cluster = {
+        id: `cluster-${crossfitBox.id}`,
+        latitude: crossfitBox.latitude,
+        longitude: crossfitBox.longitude,
+        crossfitBoxes: [crossfitBox],
+        count: 1,
+      };
+
+      crossfitBoxes.forEach((otherCrossfitBox, otherIndex) => {
+        if (index === otherIndex || used.has(otherIndex)) return;
+
+        const distance = Math.sqrt(
+          Math.pow(crossfitBox.latitude - otherCrossfitBox.latitude, 2) +
+            Math.pow(crossfitBox.longitude - otherCrossfitBox.longitude, 2)
+        );
+
+        if (distance < clusterDistance) {
+          cluster.crossfitBoxes.push(otherCrossfitBox);
+          cluster.count++;
+          used.add(otherIndex);
+        }
       });
-    } else {
-      router.push('/(tabs)/map');
-    }
-  };
 
-  const handleGoToNearbyCrossfitBoxes = () => {
-    if (currentLocation) {
-      router.push({
-        pathname: '/nearby-crossfit-boxes',
-        params: {
-          lat: currentLocation.lat,
-          lng: currentLocation.lng,
-          address: currentAddress || '',
-        },
-      } as any);
-    }
-  };
+      // 클러스터 중심 재계산
+      if (cluster.count > 1) {
+        cluster.latitude =
+          cluster.crossfitBoxes.reduce((sum, c) => sum + c.latitude, 0) / cluster.count;
+        cluster.longitude =
+          cluster.crossfitBoxes.reduce((sum, c) => sum + c.longitude, 0) / cluster.count;
+      }
 
-  const handleGoToMyCrossfitBoxes = () => {
-    router.push('/my-crossfit-boxes' as any);
-  };
-
-  const handleCrossfitBoxPress = (crossfitBox: MyCrossfitBoxPreview) => {
-    if (crossfitBox.isDeleted) {
-      return;
-    }
-    router.push(`/crossfit-box/${crossfitBox.crossfitBoxId}` as any);
-  };
-
-  // 즐겨찾기 토글
-  const handleToggleFavorite = async (crossfitBoxId: number) => {
-    if (!summary) return;
-
-    // 로딩 상태 설정
-    setSummary({
-      ...summary,
-      myCrossfitBoxesPreview: summary.myCrossfitBoxesPreview.map((c) =>
-        c.crossfitBoxId === crossfitBoxId ? { ...c, togglingFavorite: true } : c
-      ),
+      used.add(index);
+      clustered.push(cluster);
     });
 
+    return clustered;
+  }, [crossfitBoxes, region.latitudeDelta]);
+
+  const fetchCrossfitBoxesByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
     try {
-      const response = await axiosInstance.patch(`/member-crossfit-box/${crossfitBoxId}/favorite`);
-      if (response.data?.data) {
-        setSummary((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            myCrossfitBoxesPreview: prev.myCrossfitBoxesPreview.map((c) =>
-              c.crossfitBoxId === crossfitBoxId
-                ? { ...c, isFavorite: response.data.data.isFavorite, togglingFavorite: false }
-                : c
-            ),
-          };
-        });
+      // 초기 로딩일 때만 로딩 인디케이터 표시
+      if (isInitial) {
+        setIsInitialLoad(true);
       }
-    } catch (error) {
-      console.error('즐겨찾기 토글 실패:', error);
-      // 로딩 상태 해제
-      setSummary((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          myCrossfitBoxesPreview: prev.myCrossfitBoxesPreview.map((c) =>
-            c.crossfitBoxId === crossfitBoxId ? { ...c, togglingFavorite: false } : c
-          ),
-        };
+
+      // region에서 bounds 계산
+      const swLat = currentRegion.latitude - currentRegion.latitudeDelta / 2;
+      const swLng = currentRegion.longitude - currentRegion.longitudeDelta / 2;
+      const neLat = currentRegion.latitude + currentRegion.latitudeDelta / 2;
+      const neLng = currentRegion.longitude + currentRegion.longitudeDelta / 2;
+
+      const response = await axiosInstance.get('/crossfit-boxes/map/bounds', {
+        params: { swLat, swLng, neLat, neLng },
       });
-    }
-  };
-
-  // 내 크로스핏박스에서 제거
-  const handleRemoveCrossfitBox = async (crossfitBoxId: number) => {
-    try {
-      await axiosInstance.delete(`/member-crossfit-box/${crossfitBoxId}`);
-      // 성공 시 목록에서 제거
-      if (summary) {
-        setSummary({
-          ...summary,
-          myCrossfitBoxesPreview: summary.myCrossfitBoxesPreview.filter((c) => c.crossfitBoxId !== crossfitBoxId),
-        });
+      if (response.data?.data) {
+        setCrossfitBoxes(response.data.data);
       }
-      crossfitBoxEvents.emit();
     } catch (error) {
-      console.error('크로스핏박스 제거 실패:', error);
+      console.error('크로스핏박스 목록 조회 실패:', error);
+    } finally {
+      if (isInitial) {
+        setIsInitialLoad(false);
+      }
+    }
+  }, []);
+
+  const fetchMyCrossfitBoxes = async () => {
+    try {
+      const response = await axiosInstance.get('/member-crossfit-box');
+      if (response.data?.data) {
+        const ids = new Set<number>(response.data.data.map((c: any) => c.crossfitBoxId));
+        setMyCrossfitBoxIds(ids);
+      }
+    } catch (error) {
+      console.error('내 크로스핏박스 목록 조회 실패:', error);
     }
   };
 
-  const handleRetry = () => {
-    if (locationPermission === Location.PermissionStatus.GRANTED) {
-      getCurrentLocation().then((location) => fetchHomeSummary(location));
-    } else {
-      fetchHomeSummary();
+  const handleAddToMyCrossfitBoxes = async (crossfitBoxId: number) => {
+    try {
+      setAddingCrossfitBoxId(crossfitBoxId);
+      await axiosInstance.post('/member-crossfit-box', { crossfitBoxId, isFavorite: false });
+      setMyCrossfitBoxIds((prev) => new Set(prev).add(crossfitBoxId));
+      crossfitBoxEvents.emit();
+      Alert.alert('성공', '내 Box에 추가되었습니다.');
+    } catch (error: any) {
+      const message = error.response?.data?.message || '추가에 실패했습니다.';
+      Alert.alert('오류', message);
+    } finally {
+      setAddingCrossfitBoxId(null);
     }
   };
 
-  // 설정 앱 열기
-  const openSettings = () => {
-    if (Platform.OS === 'ios') {
-      Linking.openURL('app-settings:');
-    } else {
-      Linking.openSettings();
+  const handleRemoveFromMyCrossfitBoxes = async (crossfitBoxId: number) => {
+    try {
+      setAddingCrossfitBoxId(crossfitBoxId);
+      await axiosInstance.delete(`/member-crossfit-box/${crossfitBoxId}`);
+      setMyCrossfitBoxIds((prev) => {
+        const next = new Set(prev);
+        next.delete(crossfitBoxId);
+        return next;
+      });
+      crossfitBoxEvents.emit();
+      Alert.alert('성공', '내 Box에서 제거되었습니다.');
+    } catch (error: any) {
+      const message = error.response?.data?.message || '제거에 실패했습니다.';
+      Alert.alert('오류', message);
+    } finally {
+      setAddingCrossfitBoxId(null);
     }
   };
 
-  // 위치 권한 없이 계속 진행
-  const continueWithoutLocation = () => {
-    fetchHomeSummary();
+  const handleClusterPress = (cluster: Cluster) => {
+    // 마커 클릭 시 바로 크로스핏박스 정보 표시
+    setSelectedCluster(cluster);
   };
 
-  // 로딩 상태 - 스켈레톤 UI
-  if (homeState === HomeState.LOADING) {
+  const handleRegionChangeComplete = useCallback((newRegion: Region) => {
+    setRegion(newRegion);
+
+    // 기존 타이머 취소
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // 디바운스 적용: 지도 이동이 멈춘 후 일정 시간 후에 API 호출
+    debounceRef.current = setTimeout(() => {
+      fetchCrossfitBoxesByBounds(newRegion);
+    }, DEBOUNCE_DELAY);
+  }, [fetchCrossfitBoxesByBounds]);
+
+  const closeBottomSheet = () => {
+    setSelectedCluster(null);
+  };
+
+  const handleCrossfitBoxPress = (crossfitBoxId: number) => {
+    router.push(`/crossfit-box/${crossfitBoxId}` as any);
+  };
+
+  const renderCrossfitBoxItem = ({ item }: { item: CrossfitBox }) => {
+    const isMyCrossfitBox = myCrossfitBoxIds.has(item.id);
+    const isProcessing = addingCrossfitBoxId === item.id;
+
     return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* 스켈레톤: 근처 요약 카드 */}
-          <View style={[styles.summaryCard, styles.skeleton]}>
-            <View style={[styles.skeletonText, { width: '60%', height: 28 }]} />
-            <View style={[styles.skeletonText, { width: '40%', height: 14, marginTop: 8 }]} />
-            <View style={[styles.skeletonButton, { marginTop: 20 }]} />
-          </View>
-
-          {/* 스켈레톤: 내 크로스핏박스 미리보기 */}
-          <View style={styles.sectionHeader}>
-            <View style={[styles.skeletonText, { width: 100, height: 18 }]} />
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.crossfitBoxPreviewScroll}>
-            {[1, 2, 3].map((i) => (
-              <View key={i} style={[styles.crossfitBoxPreviewCard, styles.skeleton]}>
-                <View style={[styles.skeletonText, { width: '70%', height: 16 }]} />
-              </View>
-            ))}
-          </ScrollView>
-        </ScrollView>
-      </SafeAreaView>
+      <TouchableOpacity style={styles.crossfitBoxItem} onPress={() => handleCrossfitBoxPress(item.id)} activeOpacity={0.7}>
+        <View style={styles.crossfitBoxInfo}>
+          <Text style={styles.crossfitBoxName}>{item.name}</Text>
+          <Text style={styles.crossfitBoxLocation}>{item.location}</Text>
+          {item.phoneNumber && (
+            <Text style={styles.crossfitBoxPhone}>{item.phoneNumber}</Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            isMyCrossfitBox && styles.addButtonActive,
+          ]}
+          onPress={() =>
+            isMyCrossfitBox ? handleRemoveFromMyCrossfitBoxes(item.id) : handleAddToMyCrossfitBoxes(item.id)
+          }
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator size="small" color={isMyCrossfitBox ? '#588157' : '#fff'} />
+          ) : (
+            <>
+              <Ionicons
+                name={isMyCrossfitBox ? 'checkmark' : 'add'}
+                size={18}
+                color={isMyCrossfitBox ? '#588157' : '#fff'}
+              />
+              <Text style={[styles.addButtonText, isMyCrossfitBox && styles.addButtonTextActive]}>
+                {isMyCrossfitBox ? '추가됨' : '추가'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </TouchableOpacity>
     );
-  }
+  };
 
-  // 위치 권한 거부 상태 (FR-6)
-  if (homeState === HomeState.PERMISSION_DENIED) {
+  // 웹에서는 대체 UI 표시
+  if (Platform.OS === 'web') {
     return (
       <SafeAreaView style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* 권한 안내 카드 */}
-          <View style={styles.permissionCard}>
-            <Ionicons name="location-outline" size={48} color="#588157" />
-            <Text style={styles.permissionTitle}>위치 권한이 필요해요</Text>
-            <Text style={styles.permissionDescription}>
-              근처 Box를 찾으려면 위치 권한이 필요합니다.
-              {'\n'}권한을 허용하시거나 주소로 검색해보세요.
-            </Text>
-
-            <View style={styles.permissionButtons}>
-              <TouchableOpacity
-                style={styles.permissionButton}
-                onPress={locationPermission === Location.PermissionStatus.DENIED ? openSettings : requestLocationPermission}
-              >
-                <Ionicons name="location" size={18} color="#fff" />
-                <Text style={styles.permissionButtonText}>
-                  {locationPermission === Location.PermissionStatus.DENIED ? '설정에서 허용' : '권한 허용'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.permissionButton, styles.permissionButtonSecondary]}
-                onPress={continueWithoutLocation}
-              >
-                <Ionicons name="search" size={18} color="#588157" />
-                <Text style={[styles.permissionButtonText, styles.permissionButtonTextSecondary]}>
-                  위치 없이 계속
-                </Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.webContainer}>
+          <Text style={styles.webTitle}>지도</Text>
+          <Text style={styles.webSubtitle}>
+            지도 기능은 모바일 앱에서 이용 가능합니다.
+          </Text>
+          <View style={styles.webCrossfitBoxList}>
+            <Text style={styles.webListTitle}>등록된 Box 목록</Text>
+            {isInitialLoad ? (
+              <ActivityIndicator size="large" color="#588157" />
+            ) : (
+              <FlatList
+                data={crossfitBoxes}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderCrossfitBoxItem}
+                style={styles.crossfitBoxList}
+                ListEmptyComponent={
+                  <Text style={styles.emptyText}>등록된 Box가 없습니다.</Text>
+                }
+              />
+            )}
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // 오류 상태
-  if (homeState === HomeState.ERROR) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Ionicons name="cloud-offline-outline" size={64} color="#A3B18A" />
-          <Text style={styles.errorText}>{errorMessage || '문제가 발생했습니다.'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-            <Text style={styles.retryButtonText}>다시 시도</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  const isMyCrossfitBoxesEmpty = !summary?.myCrossfitBoxesPreview || summary.myCrossfitBoxesPreview.length === 0;
-
-  const handleHomeBoxPress = () => {
-    if (summary?.homeBox) {
-      router.push(`/crossfit-box/${summary.homeBox.crossfitBoxId}` as any);
-    }
-  };
+  if (isInitialLoad) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#588157" />
+        <Text style={styles.loadingText}>지도를 불러오는 중...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* 1. My Box 섹션 (가로 꽉 차게) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Box</Text>
-          {summary?.homeBox && (
-            <TouchableOpacity onPress={() => router.push('/my-box/select' as any)}>
-              <Text style={styles.moreButton}>변경</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {summary?.homeBox ? (
-          <TouchableOpacity
-            style={styles.homeBoxCard}
-            onPress={handleHomeBoxPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.homeBoxContent}>
-              <Ionicons name="home" size={24} color="#588157" />
-              <View style={styles.homeBoxInfo}>
-                <Text style={styles.homeBoxName}>{summary.homeBox.name}</Text>
-                {summary.homeBox.addressLine1 && (
-                  <Text style={styles.homeBoxAddress} numberOfLines={1}>
-                    {summary.homeBox.addressLine1}
-                  </Text>
+      {MapView && (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={region}
+          onRegionChangeComplete={handleRegionChangeComplete}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+        >
+          {clusters.map((cluster) => (
+            <Marker
+              key={cluster.id}
+              coordinate={{
+                latitude: cluster.latitude,
+                longitude: cluster.longitude,
+              }}
+              onPress={() => handleClusterPress(cluster)}
+            >
+              <View
+                style={[
+                  styles.clusterMarker,
+                  cluster.count > 1 && styles.clusterMarkerMultiple,
+                ]}
+              >
+                {cluster.count > 1 ? (
+                  <Text style={styles.clusterCount}>{cluster.count}</Text>
+                ) : (
+                  <View style={styles.singleMarker} />
                 )}
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.homeBoxEmptyCard}
-            onPress={() => router.push('/my-box/select' as any)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="home-outline" size={32} color="#A3B18A" />
-            <Text style={styles.homeBoxEmptyText}>My Box를 설정해보세요</Text>
-            <Text style={styles.homeBoxEmptySubText}>자주 가는 박스를 My Box로 설정하면 빠르게 확인할 수 있어요</Text>
-          </TouchableOpacity>
-        )}
+            </Marker>
+          ))}
+        </MapView>
+      )}
 
-        {/* 2. 즐겨찾기 섹션 */}
-        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-          <Text style={styles.sectionTitle}>즐겨찾기</Text>
-          {(summary?.hasMoreMyCrossfitBoxes || (summary?.myCrossfitBoxesPreview && summary.myCrossfitBoxesPreview.length > 0)) && (
-            <TouchableOpacity onPress={handleGoToMyCrossfitBoxes}>
-              <Text style={styles.moreButton}>더보기</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {isMyCrossfitBoxesEmpty ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="star-outline" size={48} color="#A3B18A" />
-            <Text style={styles.emptyText}>아직 등록된 Box가 없어요</Text>
-            <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleGoToMap}>
-              <Ionicons name="map-outline" size={20} color="#fff" />
-              <Text style={styles.emptyRegisterButtonText}>지도에서 추가하기</Text>
+      {/* 하단 리스트 */}
+      {selectedCluster && (
+        <View style={styles.bottomSheet}>
+          <View style={styles.bottomSheetHeader}>
+            <Text style={styles.bottomSheetTitle}>
+              {selectedCluster.count === 1
+                ? selectedCluster.crossfitBoxes[0].name
+                : `주변 Box ${selectedCluster.count}개`}
+            </Text>
+            <TouchableOpacity onPress={closeBottomSheet}>
+              <Text style={styles.closeButton}>닫기</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.crossfitBoxPreviewScroll}
-            contentContainerStyle={styles.crossfitBoxPreviewScrollContent}
-          >
-            {summary?.myCrossfitBoxesPreview.map((crossfitBox) => (
-              <TouchableOpacity
-                key={crossfitBox.crossfitBoxId}
-                style={[
-                  styles.crossfitBoxPreviewCard,
-                  crossfitBox.isDeleted && styles.crossfitBoxPreviewCardDeleted,
-                ]}
-                onPress={() => handleCrossfitBoxPress(crossfitBox)}
-                activeOpacity={crossfitBox.isDeleted ? 1 : 0.7}
-              >
-                {!crossfitBox.isDeleted && (
-                  <TouchableOpacity
-                    style={styles.favoriteButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(crossfitBox.crossfitBoxId);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    disabled={crossfitBox.togglingFavorite}
-                  >
-                    {crossfitBox.togglingFavorite ? (
-                      <ActivityIndicator size="small" color="#FFD700" />
-                    ) : (
-                      <Ionicons
-                        name={crossfitBox.isFavorite ? 'star' : 'star-outline'}
-                        size={18}
-                        color={crossfitBox.isFavorite ? '#FFD700' : '#ccc'}
-                      />
-                    )}
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleRemoveCrossfitBox(crossfitBox.crossfitBoxId);
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name="close" size={16} color="#999" />
-                </TouchableOpacity>
-
-                <View style={styles.crossfitBoxPreviewContent}>
-                  {crossfitBox.isDeleted && (
-                    <Ionicons
-                      name="alert-circle"
-                      size={16}
-                      color="#e63946"
-                      style={styles.deletedIcon}
-                    />
-                  )}
-                  <Text
-                    style={[
-                      styles.crossfitBoxPreviewName,
-                      crossfitBox.isDeleted && styles.crossfitBoxPreviewNameDeleted,
-                    ]}
-                    numberOfLines={2}
-                  >
-                    {crossfitBox.isDeleted ? '없어진 Box' : crossfitBox.name}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* 3. 주변 박스 섹션 */}
-        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-          <Text style={styles.sectionTitle}>주변 박스</Text>
+          <FlatList
+            data={selectedCluster.crossfitBoxes}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderCrossfitBoxItem}
+            style={styles.crossfitBoxList}
+          />
         </View>
-        <View style={styles.nearbyCard}>
-          <TouchableOpacity
-            onPress={handleGoToNearbyCrossfitBoxes}
-            activeOpacity={0.7}
-            accessibilityLabel={`근처 Box ${summary?.nearbyCrossfitBoxCount || 0}개`}
-            accessibilityRole="button"
-            disabled={!currentLocation}
-            style={styles.nearbyContent}
-          >
-            <View style={styles.nearbyLeft}>
-              <Ionicons name="location" size={24} color="#588157" />
-              <View style={styles.nearbyInfo}>
-                <Text style={styles.nearbyTitle}>
-                  근처 Box <Text style={styles.nearbyCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
-                </Text>
-                {currentAddress && (
-                  <Text style={styles.nearbyAddress}>{currentAddress}</Text>
-                )}
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
-            <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-            <Text style={styles.mapButtonText}>지도에서 보기</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -656,348 +445,170 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  centerContent: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-
-  // 홈 박스 카드
-  homeBoxCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  homeBoxContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  homeBoxInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  homeBoxName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#344E41',
-  },
-  homeBoxAddress: {
+  loadingText: {
+    marginTop: 10,
+    color: '#588157',
     fontSize: 14,
-    color: '#666',
-    marginTop: 2,
   },
-  homeBoxEmptyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
+  map: {
+    width: width,
+    height: height,
+  },
+  clusterMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#588157',
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  homeBoxEmptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 12,
-    fontWeight: '500',
-  },
-  homeBoxEmptySubText: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-
-  // 주변 박스 카드
-  nearbyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderWidth: 2,
+    borderColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  nearbyContent: {
+  clusterMarkerMultiple: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#344E41',
+  },
+  clusterCount: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  singleMarker: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+  },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: height * 0.4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  bottomSheetHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  nearbyLeft: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  nearbyInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  nearbyTitle: {
+  bottomSheetTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#344E41',
   },
-  nearbyCount: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  closeButton: {
+    fontSize: 14,
     color: '#588157',
   },
-  nearbyAddress: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 2,
+  crossfitBoxList: {
+    paddingHorizontal: 16,
   },
-  mapButton: {
+  crossfitBoxItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginTop: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  mapButtonText: {
-    color: '#fff',
+  crossfitBoxInfo: {
+    flex: 1,
+  },
+  crossfitBoxName: {
     fontSize: 16,
     fontWeight: '600',
-  },
-
-  // 권한 안내 카드 (FR-6)
-  permissionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  permissionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
     color: '#344E41',
-    marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  permissionDescription: {
+  crossfitBoxLocation: {
     fontSize: 14,
     color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 2,
   },
-  permissionButtons: {
-    width: '100%',
-    gap: 12,
+  crossfitBoxPhone: {
+    fontSize: 12,
+    color: '#A3B18A',
   },
-  permissionButton: {
+  addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 12,
+    minWidth: 70,
+    justifyContent: 'center',
   },
-  permissionButtonSecondary: {
+  addButtonActive: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#588157',
   },
-  permissionButtonText: {
+  addButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
+    marginLeft: 4,
   },
-  permissionButtonTextSecondary: {
+  addButtonTextActive: {
     color: '#588157',
   },
-
-  // 섹션 헤더
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  webContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 20,
   },
-  sectionTitle: {
+  webTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#344E41',
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  webSubtitle: {
+    fontSize: 14,
+    color: '#A3B18A',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 30,
+  },
+  webCrossfitBoxList: {
+    flex: 1,
+  },
+  webListTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#344E41',
-  },
-  moreButton: {
-    fontSize: 14,
-    color: '#588157',
-  },
-
-  // 내 크로스핏박스 미리보기
-  crossfitBoxPreviewScroll: {
-    marginHorizontal: -16,
-  },
-  crossfitBoxPreviewScrollContent: {
-    paddingHorizontal: 16,
-  },
-  crossfitBoxPreviewCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 8,
-    marginRight: 12,
-    width: 120,
-    height: 120,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  crossfitBoxPreviewCardDeleted: {
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#e63946',
-    borderStyle: 'dashed',
-  },
-  crossfitBoxPreviewContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  crossfitBoxPreviewName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#344E41',
-    textAlign: 'center',
-  },
-  crossfitBoxPreviewNameDeleted: {
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deletedIcon: {
-    marginRight: 4,
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // 빈 상태
-  emptyState: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 16,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  emptyRegisterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  emptyRegisterButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-
-  // 오류 상태
-  errorText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 16,
-    marginBottom: 20,
     textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-
-  // FAB
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#588157',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-
-  // 스켈레톤
-  skeleton: {
-    overflow: 'hidden',
-  },
-  skeletonText: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-  },
-  skeletonButton: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 12,
-    height: 48,
-    width: '100%',
+    color: '#A3B18A',
+    marginTop: 20,
   },
 });
