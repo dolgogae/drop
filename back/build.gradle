@@ -94,7 +94,15 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(
                 files(classDirectories.files.collect { fileTree(dir: it, exclude: [
-                        '**/data/**', '**/dto/**' // 제외할 패키지
+                        '**/data/**', '**/dto/**', // Entity, DTO 제외
+                        '**/global/config/**', // Config 클래스 제외
+                        '**/global/security/**', // Security 관련 제외
+                        '**/global/redis/**', // Redis 유틸 제외
+                        '**/global/aop/**', // AOP 제외
+                        '**/global/enums/**', // Enum 제외
+                        '**/domain/auth/**', // 인증 로직 제외
+                        '**/DropApplication.class', // 메인 클래스 제외
+                        '**/mapper/**Impl.class' // MapStruct 생성 클래스 제외
                 ]) })
         )
     }
