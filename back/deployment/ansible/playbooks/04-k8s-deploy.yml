@@ -1,0 +1,12 @@
+---
+# Kubernetes deployment only
+# Usage: ansible-playbook playbooks/04-k8s-deploy.yml
+
+- name: Deploy Drop Backend to Kubernetes
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - role: k8s-deploy

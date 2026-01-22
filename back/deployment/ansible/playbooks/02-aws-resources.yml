@@ -1,0 +1,13 @@
+---
+# AWS Resources (RDS, ElastiCache) only
+# Usage: ansible-playbook playbooks/02-aws-resources.yml --ask-vault-pass
+
+- name: Create AWS Resources for Drop Backend
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+    - ../group_vars/secrets.yml
+
+  roles:
+    - role: aws-resources

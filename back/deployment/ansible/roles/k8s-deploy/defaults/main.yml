@@ -1,0 +1,4 @@
+# Kubernetes Deploy Role Defaults
+app_replicas: 2
+app_port: 8080
+spring_profile: dev

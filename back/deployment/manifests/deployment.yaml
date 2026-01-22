@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drop-backend
+  labels:
+    app: drop-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: drop-backend
+  template:
+    metadata:
+      labels:
+        app: drop-backend
+    spec:
+      serviceAccountName: drop-backend-sa
+      containers:
+      - name: drop-backend
+        image: 441070253196.dkr.ecr.ap-northeast-2.amazonaws.com/drop-backend:TV01
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "dev"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: database-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: database-port
+        - name: DB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: database-name
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://$(DB_HOST):$(DB_PORT)/$(DB_DATABASE)?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: database-username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: database-password
+        - name: SPRING_REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: redis-host
+        - name: SPRING_REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: redis-port
+        - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: google-client-id
+        - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: google-client-secret
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: jwt-secret-key
+        - name: AES_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: aes-secret-key
+        - name: KAKAO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: drop-backend-secrets-k8s
+              key: kakao-api-key
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: drop-backend-secrets
+      restartPolicy: Always

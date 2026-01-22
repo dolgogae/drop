@@ -1,0 +1,2 @@
+# Secrets Manager Role Defaults
+secrets_prefix: drop/backend

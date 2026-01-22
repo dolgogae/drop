@@ -1,0 +1,288 @@
+---
+- name: Get EKS cluster VPC ID
+  ansible.builtin.command:
+    cmd: >
+      aws eks describe-cluster
+      --name {{ eks_cluster_name }}
+      --region {{ aws_region }}
+      --query 'cluster.resourcesVpcConfig.vpcId'
+      --output text
+  register: vpc_result
+  changed_when: false
+
+- name: Set VPC ID fact
+  ansible.builtin.set_fact:
+    vpc_id: "{{ vpc_result.stdout }}"
+
+- name: Get EKS cluster subnet IDs
+  ansible.builtin.command:
+    cmd: >
+      aws eks describe-cluster
+      --name {{ eks_cluster_name }}
+      --region {{ aws_region }}
+      --query 'cluster.resourcesVpcConfig.subnetIds'
+      --output text
+  register: subnets_result
+  changed_when: false
+
+- name: Set subnet IDs fact
+  ansible.builtin.set_fact:
+    subnet_ids: "{{ subnets_result.stdout.split() }}"
+
+- name: Get EKS cluster security group ID
+  ansible.builtin.command:
+    cmd: >
+      aws eks describe-cluster
+      --name {{ eks_cluster_name }}
+      --region {{ aws_region }}
+      --query 'cluster.resourcesVpcConfig.clusterSecurityGroupId'
+      --output text
+  register: eks_sg_result
+  changed_when: false
+
+- name: Set EKS security group fact
+  ansible.builtin.set_fact:
+    eks_security_group_id: "{{ eks_sg_result.stdout }}"
+
+- name: Display gathered information
+  ansible.builtin.debug:
+    msg: |
+      VPC ID: {{ vpc_id }}
+      Subnet IDs: {{ subnet_ids }}
+      EKS Security Group: {{ eks_security_group_id }}
+
+# RDS Security Group
+- name: Check if RDS security group exists
+  ansible.builtin.command:
+    cmd: >
+      aws ec2 describe-security-groups
+      --filters "Name=group-name,Values={{ rds_security_group_name }}" "Name=vpc-id,Values={{ vpc_id }}"
+      --region {{ aws_region }}
+      --query 'SecurityGroups[0].GroupId'
+      --output text
+  register: rds_sg_check
+  failed_when: false
+  changed_when: false
+
+- name: Create RDS security group
+  ansible.builtin.command:
+    cmd: >
+      aws ec2 create-security-group
+      --group-name {{ rds_security_group_name }}
+      --description "Security group for Drop RDS MySQL"
+      --vpc-id {{ vpc_id }}
+      --region {{ aws_region }}
+      --query 'GroupId'
+      --output text
+  register: rds_sg_create
+  when: rds_sg_check.stdout == "None" or rds_sg_check.stdout == ""
+
+- name: Set RDS security group ID fact
+  ansible.builtin.set_fact:
+    rds_security_group_id: "{{ rds_sg_create.stdout if rds_sg_create.changed else rds_sg_check.stdout }}"
+
+- name: Add inbound rule to RDS security group
+  ansible.builtin.command:
+    cmd: >
+      aws ec2 authorize-security-group-ingress
+      --group-id {{ rds_security_group_id }}
+      --protocol tcp
+      --port 3306
+      --source-group {{ eks_security_group_id }}
+      --region {{ aws_region }}
+  failed_when: false
+  changed_when: false
+
+# Redis Security Group
+- name: Check if Redis security group exists
+  ansible.builtin.command:
+    cmd: >
+      aws ec2 describe-security-groups
+      --filters "Name=group-name,Values={{ redis_security_group_name }}" "Name=vpc-id,Values={{ vpc_id }}"
+      --region {{ aws_region }}
+      --query 'SecurityGroups[0].GroupId'
+      --output text
+  register: redis_sg_check
+  failed_when: false
+  changed_when: false
+
+- name: Create Redis security group
+  ansible.builtin.command:
+    cmd: >
+      aws ec2 create-security-group
+      --group-name {{ redis_security_group_name }}
+      --description "Security group for Drop ElastiCache Redis"
+      --vpc-id {{ vpc_id }}
+      --region {{ aws_region }}
+      --query 'GroupId'
+      --output text
+  register: redis_sg_create
+  when: redis_sg_check.stdout == "None" or redis_sg_check.stdout == ""
+
+- name: Set Redis security group ID fact
+  ansible.builtin.set_fact:
+    redis_security_group_id: "{{ redis_sg_create.stdout if redis_sg_create.changed else redis_sg_check.stdout }}"
+
+- name: Add inbound rule to Redis security group
+  ansible.builtin.command:
+    cmd: >
+      aws ec2 authorize-security-group-ingress
+      --group-id {{ redis_security_group_id }}
+      --protocol tcp
+      --port 6379
+      --source-group {{ eks_security_group_id }}
+      --region {{ aws_region }}
+  failed_when: false
+  changed_when: false
+
+# RDS Subnet Group
+- name: Check if RDS subnet group exists
+  ansible.builtin.command:
+    cmd: >
+      aws rds describe-db-subnet-groups
+      --db-subnet-group-name {{ rds_subnet_group_name }}
+      --region {{ aws_region }}
+  register: rds_subnet_check
+  failed_when: false
+  changed_when: false
+
+- name: Create RDS subnet group
+  ansible.builtin.command:
+    cmd: >
+      aws rds create-db-subnet-group
+      --db-subnet-group-name {{ rds_subnet_group_name }}
+      --db-subnet-group-description "Subnet group for Drop RDS"
+      --subnet-ids {{ subnet_ids | join(' ') }}
+      --region {{ aws_region }}
+  when: rds_subnet_check.rc != 0
+
+# ElastiCache Subnet Group
+- name: Check if ElastiCache subnet group exists
+  ansible.builtin.command:
+    cmd: >
+      aws elasticache describe-cache-subnet-groups
+      --cache-subnet-group-name {{ redis_subnet_group_name }}
+      --region {{ aws_region }}
+  register: redis_subnet_check
+  failed_when: false
+  changed_when: false
+
+- name: Create ElastiCache subnet group
+  ansible.builtin.command:
+    cmd: >
+      aws elasticache create-cache-subnet-group
+      --cache-subnet-group-name {{ redis_subnet_group_name }}
+      --cache-subnet-group-description "Subnet group for Drop Redis"
+      --subnet-ids {{ subnet_ids | join(' ') }}
+      --region {{ aws_region }}
+  when: redis_subnet_check.rc != 0
+
+# RDS Instance
+- name: Check if RDS instance exists
+  ansible.builtin.command:
+    cmd: >
+      aws rds describe-db-instances
+      --db-instance-identifier {{ rds_instance_identifier }}
+      --region {{ aws_region }}
+  register: rds_check
+  failed_when: false
+  changed_when: false
+
+- name: Create RDS MySQL instance
+  ansible.builtin.command:
+    cmd: >
+      aws rds create-db-instance
+      --db-instance-identifier {{ rds_instance_identifier }}
+      --db-instance-class {{ rds_instance_class }}
+      --engine {{ rds_engine }}
+      --engine-version {{ rds_engine_version }}
+      --master-username {{ rds_master_username }}
+      --master-user-password '{{ rds_master_password }}'
+      --allocated-storage {{ rds_allocated_storage }}
+      --vpc-security-group-ids {{ rds_security_group_id }}
+      --db-subnet-group-name {{ rds_subnet_group_name }}
+      --backup-retention-period 0
+      --no-multi-az
+      --publicly-accessible
+      --region {{ aws_region }}
+  when: rds_check.rc != 0
+  register: rds_create
+
+- name: Wait for RDS instance to be available
+  ansible.builtin.command:
+    cmd: >
+      aws rds wait db-instance-available
+      --db-instance-identifier {{ rds_instance_identifier }}
+      --region {{ aws_region }}
+  when: rds_create.changed | default(false)
+
+- name: Get RDS endpoint
+  ansible.builtin.command:
+    cmd: >
+      aws rds describe-db-instances
+      --db-instance-identifier {{ rds_instance_identifier }}
+      --region {{ aws_region }}
+      --query 'DBInstances[0].Endpoint.Address'
+      --output text
+  register: rds_endpoint_result
+  changed_when: false
+
+- name: Set RDS endpoint fact
+  ansible.builtin.set_fact:
+    rds_endpoint: "{{ rds_endpoint_result.stdout }}"
+
+# ElastiCache Redis
+- name: Check if ElastiCache cluster exists
+  ansible.builtin.command:
+    cmd: >
+      aws elasticache describe-cache-clusters
+      --cache-cluster-id {{ redis_cluster_id }}
+      --region {{ aws_region }}
+  register: redis_check
+  failed_when: false
+  changed_when: false
+
+- name: Create ElastiCache Redis cluster
+  ansible.builtin.command:
+    cmd: >
+      aws elasticache create-cache-cluster
+      --cache-cluster-id {{ redis_cluster_id }}
+      --cache-node-type {{ redis_node_type }}
+      --engine redis
+      --engine-version {{ redis_engine_version }}
+      --num-cache-nodes {{ redis_num_cache_nodes }}
+      --cache-subnet-group-name {{ redis_subnet_group_name }}
+      --security-group-ids {{ redis_security_group_id }}
+      --region {{ aws_region }}
+  when: redis_check.rc != 0
+  register: redis_create
+
+- name: Wait for ElastiCache cluster to be available
+  ansible.builtin.command:
+    cmd: >
+      aws elasticache wait cache-cluster-available
+      --cache-cluster-id {{ redis_cluster_id }}
+      --region {{ aws_region }}
+  when: redis_create.changed | default(false)
+
+- name: Get ElastiCache endpoint
+  ansible.builtin.command:
+    cmd: >
+      aws elasticache describe-cache-clusters
+      --cache-cluster-id {{ redis_cluster_id }}
+      --show-cache-node-info
+      --region {{ aws_region }}
+      --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address'
+      --output text
+  register: redis_endpoint_result
+  changed_when: false
+
+- name: Set Redis endpoint fact
+  ansible.builtin.set_fact:
+    redis_endpoint: "{{ redis_endpoint_result.stdout }}"
+
+- name: Display endpoints
+  ansible.builtin.debug:
+    msg: |
+      RDS MySQL Endpoint: {{ rds_endpoint }}
+      ElastiCache Redis Endpoint: {{ redis_endpoint }}

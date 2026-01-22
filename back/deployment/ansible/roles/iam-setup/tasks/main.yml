@@ -1,0 +1,69 @@
+---
+- name: Associate OIDC provider with EKS cluster
+  ansible.builtin.command:
+    cmd: >
+      eksctl utils associate-iam-oidc-provider
+      --cluster {{ eks_cluster_name }}
+      --region {{ aws_region }}
+      --approve
+  register: oidc_result
+  changed_when: "'created' in oidc_result.stdout or 'associated' in oidc_result.stdout"
+
+- name: Create IAM policy document
+  ansible.builtin.template:
+    src: secrets-policy.json.j2
+    dest: /tmp/drop-secrets-policy.json
+    mode: '0644'
+
+- name: Check if IAM policy exists
+  ansible.builtin.command:
+    cmd: >
+      aws iam get-policy
+      --policy-arn arn:aws:iam::{{ aws_account_id }}:policy/{{ iam_policy_name }}
+  register: policy_check
+  failed_when: false
+  changed_when: false
+
+- name: Create IAM policy
+  ansible.builtin.command:
+    cmd: >
+      aws iam create-policy
+      --policy-name {{ iam_policy_name }}
+      --policy-document file:///tmp/drop-secrets-policy.json
+  when: policy_check.rc != 0
+  register: create_policy_result
+
+- name: Create IAM service account with eksctl
+  ansible.builtin.command:
+    cmd: >
+      eksctl create iamserviceaccount
+      --name {{ iam_service_account_name }}
+      --namespace {{ app_namespace }}
+      --cluster {{ eks_cluster_name }}
+      --region {{ aws_region }}
+      --attach-policy-arn arn:aws:iam::{{ aws_account_id }}:policy/{{ iam_policy_name }}
+      --approve
+      --override-existing-serviceaccounts
+  register: sa_result
+  changed_when: "'created' in sa_result.stdout or 'updated' in sa_result.stdout"
+
+- name: Get service account IAM role ARN
+  ansible.builtin.command:
+    cmd: >
+      kubectl get sa {{ iam_service_account_name }} -n {{ app_namespace }}
+      -o jsonpath='{.metadata.annotations.eks\.amazonaws\.com/role-arn}'
+  register: role_arn_result
+  changed_when: false
+
+- name: Set IAM role ARN fact
+  ansible.builtin.set_fact:
+    iam_role_arn: "{{ role_arn_result.stdout }}"
+
+- name: Display IAM role ARN
+  ansible.builtin.debug:
+    msg: "IAM Role ARN: {{ iam_role_arn }}"
+
+- name: Clean up temporary policy file
+  ansible.builtin.file:
+    path: /tmp/drop-secrets-policy.json
+    state: absent

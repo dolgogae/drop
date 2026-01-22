@@ -1,0 +1,100 @@
+---
+# Cleanup all resources
+# Usage: ansible-playbook playbooks/cleanup.yml
+# WARNING: This will delete all resources!
+
+- name: Cleanup Drop Backend Resources
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  vars_prompt:
+    - name: confirm_delete
+      prompt: "Are you sure you want to delete ALL resources? Type 'yes' to confirm"
+      private: false
+
+  tasks:
+    - name: Abort if not confirmed
+      ansible.builtin.fail:
+        msg: "Cleanup aborted. Type 'yes' to confirm deletion."
+      when: confirm_delete != 'yes'
+
+    - name: Update kubeconfig
+      ansible.builtin.command:
+        cmd: aws eks update-kubeconfig --region {{ aws_region }} --name {{ eks_cluster_name }}
+      changed_when: false
+
+    # Kubernetes Resources
+    - name: Delete Kubernetes Deployment
+      ansible.builtin.command:
+        cmd: kubectl delete deployment {{ k8s_deployment_name }} -n {{ app_namespace }}
+      failed_when: false
+
+    - name: Delete Kubernetes Service
+      ansible.builtin.command:
+        cmd: kubectl delete service {{ k8s_service_name }} -n {{ app_namespace }}
+      failed_when: false
+
+    - name: Delete SecretProviderClass
+      ansible.builtin.command:
+        cmd: kubectl delete secretproviderclass {{ k8s_secret_provider_class_name }} -n {{ app_namespace }}
+      failed_when: false
+
+    # RDS
+    - name: Delete RDS instance
+      ansible.builtin.command:
+        cmd: >
+          aws rds delete-db-instance
+          --db-instance-identifier {{ rds_instance_identifier }}
+          --skip-final-snapshot
+          --region {{ aws_region }}
+      failed_when: false
+
+    - name: Wait for RDS deletion
+      ansible.builtin.command:
+        cmd: >
+          aws rds wait db-instance-deleted
+          --db-instance-identifier {{ rds_instance_identifier }}
+          --region {{ aws_region }}
+      failed_when: false
+
+    # ElastiCache
+    - name: Delete ElastiCache cluster
+      ansible.builtin.command:
+        cmd: >
+          aws elasticache delete-cache-cluster
+          --cache-cluster-id {{ redis_cluster_id }}
+          --region {{ aws_region }}
+      failed_when: false
+
+    # Secrets Manager
+    - name: Delete Secrets Manager secrets
+      ansible.builtin.command:
+        cmd: >
+          aws secretsmanager delete-secret
+          --secret-id {{ secrets_prefix }}/{{ item }}
+          --force-delete-without-recovery
+          --region {{ aws_region }}
+      loop:
+        - db-credentials
+        - oauth-credentials
+        - jwt-secret
+        - aes-secret
+        - redis-connection
+        - kakao-api
+      failed_when: false
+
+    - name: Cleanup complete
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          Cleanup initiated!
+          ============================================
+          Note: Some resources may take time to fully delete.
+          - RDS: ~5-10 minutes
+          - ElastiCache: ~5-10 minutes
+
+          Security Groups and Subnet Groups are NOT deleted
+          to avoid accidental removal of shared resources.
+          ============================================
