@@ -1,0 +1,51 @@
+# AWS Configuration
+aws_region: ap-northeast-2
+aws_account_id: "441070253196"
+
+# EKS Configuration
+eks_cluster_name: backend-api-dev-eks
+
+# Application Configuration
+app_name: drop-backend
+app_namespace: default
+app_replicas: 2
+app_port: 8080
+spring_profile: dev
+docker_image_tag: TV01
+
+# ECR Configuration
+ecr_repository: drop-backend
+ecr_image: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ ecr_repository }}:{{ docker_image_tag }}"
+
+# RDS Configuration
+rds_instance_identifier: drop-mysql
+rds_instance_class: db.t3.micro
+rds_engine: mysql
+rds_engine_version: "8.0.40"
+rds_allocated_storage: 20
+rds_master_username: admin
+rds_database_name: drop
+rds_security_group_name: drop-rds-sg
+rds_subnet_group_name: drop-db-subnet-group
+
+# ElastiCache Configuration
+redis_cluster_id: drop-redis
+redis_node_type: cache.t3.micro
+redis_engine_version: "7.0"
+redis_num_cache_nodes: 1
+redis_security_group_name: drop-redis-sg
+redis_subnet_group_name: drop-redis-subnet-group
+
+# IAM Configuration
+iam_policy_name: DropBackendSecretsPolicy
+iam_service_account_name: drop-backend-sa
+
+# Secrets Manager Configuration
+secrets_prefix: drop/backend
+
+# Kubernetes Resource Names
+k8s_service_account_name: drop-backend-sa
+k8s_secret_provider_class_name: drop-backend-secrets
+k8s_secret_name: drop-backend-secrets-k8s
+k8s_deployment_name: drop-backend
+k8s_service_name: drop-backend-service

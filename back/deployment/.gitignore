@@ -1,0 +1,8 @@
+# Secret 설정 파일 (실제 값이 포함되어 있음)
+scripts/setup-secrets.sh
+
+# AWS 정책 파일
+scripts/drop-secrets-policy.json
+
+# Ansible secrets (실제 값이 포함되어 있음)
+ansible/group_vars/secrets.yml

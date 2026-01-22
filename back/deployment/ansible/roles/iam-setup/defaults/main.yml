@@ -1,0 +1,3 @@
+# IAM Setup Role Defaults
+iam_policy_name: DropBackendSecretsPolicy
+iam_service_account_name: drop-backend-sa

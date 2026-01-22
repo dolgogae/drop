@@ -2,13 +2,167 @@
 
 이 가이드는 Drop 백엔드를 AWS EKS에 배포하는 전체 과정을 설명합니다.
 
+## 폴더 구조
+
+```
+kubernetes/
+├── ansible/                        # Ansible 자동화 배포
+│   ├── ansible.cfg
+│   ├── site.yml                    # 전체 배포 플레이북
+│   ├── inventory/
+│   │   └── hosts.yml
+│   ├── group_vars/
+│   │   ├── all.yml                 # 공통 변수
+│   │   └── secrets.yml.example     # 시크릿 변수 예시
+│   ├── playbooks/                  # 개별 플레이북
+│   │   ├── 01-iam-setup.yml
+│   │   ├── 02-aws-resources.yml
+│   │   ├── 03-secrets-manager.yml
+│   │   ├── 04-k8s-deploy.yml
+│   │   └── cleanup.yml
+│   └── roles/
+│       ├── iam-setup/              # IAM 설정 역할
+│       ├── aws-resources/          # AWS 리소스 생성 역할
+│       ├── secrets-manager/        # Secrets Manager 역할
+│       └── k8s-deploy/             # Kubernetes 배포 역할
+├── manifests/                      # Kubernetes 매니페스트 파일
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── service-account.yaml
+│   └── secret-provider-class.yaml
+├── scripts/                        # 설정 스크립트 (수동 배포용)
+│   ├── setup-aws-resources.sh
+│   ├── setup-iam.sh
+│   ├── setup-secrets.sh
+│   └── setup-secrets.sh.example
+├── DEPLOYMENT_GUIDE.md
+└── .gitignore
+```
+
 ## 사전 요구사항
 
 - AWS CLI 설치 및 구성
 - kubectl 설치
+- eksctl 설치
 - Docker 설치
+- Ansible 설치 (자동화 배포 사용 시)
 - EKS 클러스터 (`backend-api-dev-eks`) 생성 완료
 - AWS 계정 ID 확인: `aws sts get-caller-identity --query Account --output text`
+
+---
+
+# 배포 방법 1: Ansible 자동화 배포 (권장)
+
+Ansible을 사용하여 전체 인프라와 애플리케이션을 한 번에 배포할 수 있습니다.
+
+## Ansible 사전 준비
+
+```bash
+# Ansible 설치 (macOS)
+brew install ansible
+
+# 또는 pip로 설치
+pip install ansible
+```
+
+## 시크릿 설정
+
+```bash
+cd kubernetes/ansible
+
+# 시크릿 파일 생성
+cp group_vars/secrets.yml.example group_vars/secrets.yml
+
+# 실제 값으로 편집
+vi group_vars/secrets.yml
+
+# Ansible Vault로 암호화 (권장)
+ansible-vault encrypt group_vars/secrets.yml
+```
+
+`secrets.yml` 예시:
+```yaml
+# RDS Master Password
+rds_master_password: "YourStrongPassword123!"
+
+# OAuth Credentials
+google_client_id: "your-client-id.apps.googleusercontent.com"
+google_client_secret: "your-client-secret"
+
+# JWT Secret (minimum 256 bits)
+jwt_secret_key: "your-jwt-secret-key-at-least-32-characters-long"
+
+# AES Secret (exactly 16 bytes)
+aes_secret_key: "1234567890123456"
+
+# Kakao API Key
+kakao_api_key: "your-kakao-api-key"
+```
+
+## 전체 배포 (한 번에 모든 리소스 생성)
+
+```bash
+cd kubernetes/ansible
+
+# 전체 배포 실행
+ansible-playbook site.yml --ask-vault-pass
+
+# 또는 vault 파일 없이 (secrets.yml이 암호화되지 않은 경우)
+ansible-playbook site.yml
+```
+
+이 명령은 다음을 자동으로 수행합니다:
+1. IAM OIDC Provider 연결 및 ServiceAccount 생성
+2. RDS MySQL 및 ElastiCache Redis 생성
+3. AWS Secrets Manager에 시크릿 생성/업데이트
+4. Secrets Store CSI Driver 설치
+5. Kubernetes 리소스 배포 (SecretProviderClass, Deployment, Service)
+
+## 개별 단계 실행
+
+필요한 경우 개별 단계만 실행할 수 있습니다:
+
+```bash
+cd kubernetes/ansible
+
+# 1. IAM 설정만
+ansible-playbook playbooks/01-iam-setup.yml
+
+# 2. AWS 리소스 (RDS, Redis) 생성만
+ansible-playbook playbooks/02-aws-resources.yml --ask-vault-pass
+
+# 3. Secrets Manager 설정만
+ansible-playbook playbooks/03-secrets-manager.yml --ask-vault-pass
+
+# 4. Kubernetes 배포만
+ansible-playbook playbooks/04-k8s-deploy.yml
+```
+
+## 태그를 사용한 선택적 실행
+
+```bash
+# IAM 관련만 실행
+ansible-playbook site.yml --tags iam --ask-vault-pass
+
+# AWS 리소스만 실행
+ansible-playbook site.yml --tags aws --ask-vault-pass
+
+# Kubernetes 배포만 실행
+ansible-playbook site.yml --tags kubernetes --ask-vault-pass
+```
+
+## 리소스 정리 (Ansible)
+
+```bash
+cd kubernetes/ansible
+ansible-playbook playbooks/cleanup.yml
+```
+
+---
+
+# 배포 방법 2: 수동 배포 (스크립트 사용)
+
+Ansible 없이 쉘 스크립트를 사용하여 수동으로 배포할 수 있습니다.
 
 ## 1단계: AWS Secrets Store CSI Driver 설치
 
@@ -34,7 +188,7 @@ kubectl get pods -n kube-system | grep secrets-store
 ### 간단한 방법: setup-iam.sh 사용 (권장)
 
 ```bash
-cd kubernetes
+cd kubernetes/scripts
 ./setup-iam.sh
 ```
 
@@ -111,7 +265,7 @@ eksctl create iamserviceaccount \
 ## 3단계: RDS 및 ElastiCache 생성
 
 ```bash
-cd kubernetes
+cd kubernetes/scripts
 chmod +x setup-aws-resources.sh
 ./setup-aws-resources.sh
 ```
@@ -127,10 +281,12 @@ chmod +x setup-aws-resources.sh
 
 ## 4단계: AWS Secrets Manager에 Secret 생성
 
-**주의**: `setup-secrets.sh` 파일은 실제 secret 값이 포함되어 있어 `.gitignore`에 추가되어 있습니다.
+**주의**: `scripts/setup-secrets.sh` 파일은 실제 secret 값이 포함되어 있어 `.gitignore`에 추가되어 있습니다.
 새로운 환경에서는 `setup-secrets.sh.example`을 복사하여 사용하세요.
 
 ```bash
+cd kubernetes/scripts
+
 # 새로운 환경이라면 example 파일을 복사
 # cp setup-secrets.sh.example setup-secrets.sh
 # 그 다음 setup-secrets.sh를 편집하여 실제 값 입력
@@ -279,16 +435,16 @@ cd kubernetes
 aws eks update-kubeconfig --region ap-northeast-2 --name backend-api-dev-eks
 
 # ServiceAccount 배포 (필요한 경우)
-kubectl apply -f service-account.yaml
+kubectl apply -f manifests/service-account.yaml
 
 # SecretProviderClass 배포
-kubectl apply -f secret-provider-class.yaml
+kubectl apply -f manifests/secret-provider-class.yaml
 
 # Deployment 배포
-kubectl apply -f deployment.yaml
+kubectl apply -f manifests/deployment.yaml
 
 # Service 배포
-kubectl apply -f service.yaml
+kubectl apply -f manifests/service.yaml
 ```
 
 ## 9단계: 배포 확인
@@ -390,11 +546,13 @@ kubectl rollout status deployment/drop-backend
 더 이상 사용하지 않을 때:
 
 ```bash
+cd kubernetes
+
 # Kubernetes 리소스 삭제
-kubectl delete -f deployment.yaml
-kubectl delete -f service.yaml
-kubectl delete -f secret-provider-class.yaml
-kubectl delete -f service-account.yaml
+kubectl delete -f manifests/deployment.yaml
+kubectl delete -f manifests/service.yaml
+kubectl delete -f manifests/secret-provider-class.yaml
+kubectl delete -f manifests/service-account.yaml
 
 # RDS 삭제
 aws rds delete-db-instance --db-instance-identifier drop-mysql --skip-final-snapshot --region ap-northeast-2

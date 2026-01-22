@@ -1,0 +1,184 @@
+---
+# Database Credentials
+- name: Check if db-credentials secret exists
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager describe-secret
+      --secret-id {{ secrets_prefix }}/db-credentials
+      --region {{ aws_region }}
+  register: db_secret_check
+  failed_when: false
+  changed_when: false
+
+- name: Create db-credentials secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager create-secret
+      --name {{ secrets_prefix }}/db-credentials
+      --description "Database credentials for Drop backend"
+      --secret-string '{"username":"{{ rds_master_username }}","password":"{{ rds_master_password }}","host":"{{ rds_endpoint }}","port":"3306","database":"{{ rds_database_name }}"}'
+      --region {{ aws_region }}
+  when: db_secret_check.rc != 0
+
+- name: Update db-credentials secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager update-secret
+      --secret-id {{ secrets_prefix }}/db-credentials
+      --secret-string '{"username":"{{ rds_master_username }}","password":"{{ rds_master_password }}","host":"{{ rds_endpoint }}","port":"3306","database":"{{ rds_database_name }}"}'
+      --region {{ aws_region }}
+  when: db_secret_check.rc == 0
+
+# OAuth Credentials
+- name: Check if oauth-credentials secret exists
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager describe-secret
+      --secret-id {{ secrets_prefix }}/oauth-credentials
+      --region {{ aws_region }}
+  register: oauth_secret_check
+  failed_when: false
+  changed_when: false
+
+- name: Create oauth-credentials secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager create-secret
+      --name {{ secrets_prefix }}/oauth-credentials
+      --description "OAuth credentials for Drop backend"
+      --secret-string '{"googleClientId":"{{ google_client_id }}","googleClientSecret":"{{ google_client_secret }}"}'
+      --region {{ aws_region }}
+  when: oauth_secret_check.rc != 0
+
+- name: Update oauth-credentials secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager update-secret
+      --secret-id {{ secrets_prefix }}/oauth-credentials
+      --secret-string '{"googleClientId":"{{ google_client_id }}","googleClientSecret":"{{ google_client_secret }}"}'
+      --region {{ aws_region }}
+  when: oauth_secret_check.rc == 0
+
+# JWT Secret
+- name: Check if jwt-secret exists
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager describe-secret
+      --secret-id {{ secrets_prefix }}/jwt-secret
+      --region {{ aws_region }}
+  register: jwt_secret_check
+  failed_when: false
+  changed_when: false
+
+- name: Create jwt-secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager create-secret
+      --name {{ secrets_prefix }}/jwt-secret
+      --description "JWT secret for Drop backend"
+      --secret-string '{"secretKey":"{{ jwt_secret_key }}"}'
+      --region {{ aws_region }}
+  when: jwt_secret_check.rc != 0
+
+- name: Update jwt-secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager update-secret
+      --secret-id {{ secrets_prefix }}/jwt-secret
+      --secret-string '{"secretKey":"{{ jwt_secret_key }}"}'
+      --region {{ aws_region }}
+  when: jwt_secret_check.rc == 0
+
+# AES Secret
+- name: Check if aes-secret exists
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager describe-secret
+      --secret-id {{ secrets_prefix }}/aes-secret
+      --region {{ aws_region }}
+  register: aes_secret_check
+  failed_when: false
+  changed_when: false
+
+- name: Create aes-secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager create-secret
+      --name {{ secrets_prefix }}/aes-secret
+      --description "AES secret for Drop backend"
+      --secret-string '{"secretKey":"{{ aes_secret_key }}"}'
+      --region {{ aws_region }}
+  when: aes_secret_check.rc != 0
+
+- name: Update aes-secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager update-secret
+      --secret-id {{ secrets_prefix }}/aes-secret
+      --secret-string '{"secretKey":"{{ aes_secret_key }}"}'
+      --region {{ aws_region }}
+  when: aes_secret_check.rc == 0
+
+# Redis Connection
+- name: Check if redis-connection secret exists
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager describe-secret
+      --secret-id {{ secrets_prefix }}/redis-connection
+      --region {{ aws_region }}
+  register: redis_secret_check
+  failed_when: false
+  changed_when: false
+
+- name: Create redis-connection secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager create-secret
+      --name {{ secrets_prefix }}/redis-connection
+      --description "Redis connection for Drop backend"
+      --secret-string '{"host":"{{ redis_endpoint }}","port":"6379"}'
+      --region {{ aws_region }}
+  when: redis_secret_check.rc != 0
+
+- name: Update redis-connection secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager update-secret
+      --secret-id {{ secrets_prefix }}/redis-connection
+      --secret-string '{"host":"{{ redis_endpoint }}","port":"6379"}'
+      --region {{ aws_region }}
+  when: redis_secret_check.rc == 0
+
+# Kakao API
+- name: Check if kakao-api secret exists
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager describe-secret
+      --secret-id {{ secrets_prefix }}/kakao-api
+      --region {{ aws_region }}
+  register: kakao_secret_check
+  failed_when: false
+  changed_when: false
+
+- name: Create kakao-api secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager create-secret
+      --name {{ secrets_prefix }}/kakao-api
+      --description "Kakao API key for Drop backend"
+      --secret-string '{"key":"{{ kakao_api_key }}"}'
+      --region {{ aws_region }}
+  when: kakao_secret_check.rc != 0
+
+- name: Update kakao-api secret
+  ansible.builtin.command:
+    cmd: >
+      aws secretsmanager update-secret
+      --secret-id {{ secrets_prefix }}/kakao-api
+      --secret-string '{"key":"{{ kakao_api_key }}"}'
+      --region {{ aws_region }}
+  when: kakao_secret_check.rc == 0
+
+- name: Display secrets creation status
+  ansible.builtin.debug:
+    msg: "All secrets have been created/updated in AWS Secrets Manager"

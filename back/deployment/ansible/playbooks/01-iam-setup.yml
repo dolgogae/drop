@@ -1,0 +1,12 @@
+---
+# IAM Setup only
+# Usage: ansible-playbook playbooks/01-iam-setup.yml
+
+- name: Setup IAM for Drop Backend
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - role: iam-setup

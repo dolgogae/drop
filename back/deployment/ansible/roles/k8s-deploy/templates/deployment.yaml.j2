@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ k8s_deployment_name }}
+  namespace: {{ app_namespace }}
+  labels:
+    app: {{ app_name }}
+spec:
+  replicas: {{ app_replicas }}
+  selector:
+    matchLabels:
+      app: {{ app_name }}
+  template:
+    metadata:
+      labels:
+        app: {{ app_name }}
+    spec:
+      serviceAccountName: {{ k8s_service_account_name }}
+      containers:
+      - name: {{ app_name }}
+        image: {{ ecr_image }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: {{ app_port }}
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "{{ spring_profile }}"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: database-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: database-port
+        - name: DB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: database-name
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://$(DB_HOST):$(DB_PORT)/$(DB_DATABASE)?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: database-username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: database-password
+        - name: SPRING_REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: redis-host
+        - name: SPRING_REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: redis-port
+        - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: google-client-id
+        - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: google-client-secret
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: jwt-secret-key
+        - name: AES_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: aes-secret-key
+        - name: KAKAO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ k8s_secret_name }}
+              key: kakao-api-key
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: {{ k8s_secret_provider_class_name }}
+      restartPolicy: Always

@@ -1,0 +1,101 @@
+---
+- name: Update kubeconfig for EKS cluster
+  ansible.builtin.command:
+    cmd: >
+      aws eks update-kubeconfig
+      --region {{ aws_region }}
+      --name {{ eks_cluster_name }}
+  changed_when: false
+
+- name: Install Secrets Store CSI Driver
+  ansible.builtin.command:
+    cmd: "kubectl apply -f {{ item }}"
+  loop:
+    - https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/main/deploy/rbac-secretproviderclass.yaml
+    - https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/main/deploy/csidriver.yaml
+    - https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/main/deploy/secrets-store.csi.x-k8s.io_secretproviderclasses.yaml
+    - https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/main/deploy/secrets-store.csi.x-k8s.io_secretproviderclasspodstatuses.yaml
+    - https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/main/deploy/secrets-store-csi-driver.yaml
+  changed_when: false
+
+- name: Install AWS Secrets Store CSI Driver Provider
+  ansible.builtin.command:
+    cmd: kubectl apply -f https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml
+  changed_when: false
+
+- name: Wait for CSI Driver pods to be ready
+  ansible.builtin.command:
+    cmd: kubectl wait --for=condition=Ready pod -l app=secrets-store-csi-driver -n kube-system --timeout=120s
+  changed_when: false
+  failed_when: false
+
+- name: Create temporary directory for manifests
+  ansible.builtin.file:
+    path: /tmp/k8s-manifests
+    state: directory
+    mode: '0755'
+
+- name: Generate SecretProviderClass manifest
+  ansible.builtin.template:
+    src: secret-provider-class.yaml.j2
+    dest: /tmp/k8s-manifests/secret-provider-class.yaml
+    mode: '0644'
+
+- name: Generate Deployment manifest
+  ansible.builtin.template:
+    src: deployment.yaml.j2
+    dest: /tmp/k8s-manifests/deployment.yaml
+    mode: '0644'
+
+- name: Generate Service manifest
+  ansible.builtin.template:
+    src: service.yaml.j2
+    dest: /tmp/k8s-manifests/service.yaml
+    mode: '0644'
+
+- name: Apply SecretProviderClass
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/k8s-manifests/secret-provider-class.yaml
+  register: spc_result
+  changed_when: "'created' in spc_result.stdout or 'configured' in spc_result.stdout"
+
+- name: Apply Deployment
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/k8s-manifests/deployment.yaml
+  register: deployment_result
+  changed_when: "'created' in deployment_result.stdout or 'configured' in deployment_result.stdout"
+
+- name: Apply Service
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/k8s-manifests/service.yaml
+  register: service_result
+  changed_when: "'created' in service_result.stdout or 'configured' in service_result.stdout"
+
+- name: Wait for deployment to be ready
+  ansible.builtin.command:
+    cmd: kubectl rollout status deployment/{{ k8s_deployment_name }} -n {{ app_namespace }} --timeout=300s
+  changed_when: false
+
+- name: Get LoadBalancer URL
+  ansible.builtin.command:
+    cmd: >
+      kubectl get svc {{ k8s_service_name }} -n {{ app_namespace }}
+      -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+  register: lb_url
+  changed_when: false
+  retries: 12
+  delay: 10
+  until: lb_url.stdout != ""
+
+- name: Display deployment information
+  ansible.builtin.debug:
+    msg: |
+      Deployment completed successfully!
+
+      LoadBalancer URL: http://{{ lb_url.stdout }}/api/
+      Swagger UI: http://{{ lb_url.stdout }}/api/swagger-ui.html
+
+- name: Clean up temporary manifests
+  ansible.builtin.file:
+    path: /tmp/k8s-manifests
+    state: absent

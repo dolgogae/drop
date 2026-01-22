@@ -1,0 +1,61 @@
+---
+# Main playbook - Full deployment
+# Usage: ansible-playbook site.yml --ask-vault-pass
+
+- name: Deploy Drop Backend to EKS
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/secrets.yml
+
+  pre_tasks:
+    - name: Verify AWS CLI is configured
+      ansible.builtin.command: aws sts get-caller-identity
+      register: aws_identity
+      changed_when: false
+
+    - name: Display AWS identity
+      ansible.builtin.debug:
+        msg: "Deploying as AWS Account: {{ (aws_identity.stdout | from_json).Account }}"
+
+    - name: Verify kubectl is installed
+      ansible.builtin.command: kubectl version --client
+      register: kubectl_check
+      changed_when: false
+
+    - name: Verify eksctl is installed
+      ansible.builtin.command: eksctl version
+      register: eksctl_check
+      changed_when: false
+
+  roles:
+    - role: iam-setup
+      tags: [iam, setup]
+
+    - role: aws-resources
+      tags: [aws, rds, redis]
+
+    - role: secrets-manager
+      tags: [secrets]
+
+    - role: k8s-deploy
+      tags: [kubernetes, deploy]
+
+  post_tasks:
+    - name: Deployment Summary
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          Deployment completed successfully!
+          ============================================
+
+          RDS Endpoint: {{ rds_endpoint }}
+          Redis Endpoint: {{ redis_endpoint }}
+
+          Application URL: http://{{ lb_url.stdout }}/api/
+          Swagger UI: http://{{ lb_url.stdout }}/api/swagger-ui.html
+
+          To check pods: kubectl get pods -l app={{ app_name }}
+          To check logs: kubectl logs -l app={{ app_name }} -f
+          ============================================

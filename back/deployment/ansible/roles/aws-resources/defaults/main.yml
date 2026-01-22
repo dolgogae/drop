@@ -1,0 +1,8 @@
+# AWS Resources Role Defaults
+rds_instance_class: db.t3.micro
+rds_engine: mysql
+rds_engine_version: "8.0.40"
+rds_allocated_storage: 20
+redis_node_type: cache.t3.micro
+redis_engine_version: "7.0"
+redis_num_cache_nodes: 1
