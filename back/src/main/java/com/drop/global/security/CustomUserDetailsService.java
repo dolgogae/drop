@@ -25,12 +25,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                     return new UsernameNotFoundException("존재하지 않는 아이디입니다.");
                 });
 
-        UserDetails userDetails = createUserDetails(user);
+        UserDetails userDetails = CustomUserDetails.of(user);
         log.info(userDetails.toString());
         return userDetails;
-    }
-
-    private UserDetails createUserDetails(Authenticatable user) {
-        return CustomUserDetails.of(user);
     }
 }

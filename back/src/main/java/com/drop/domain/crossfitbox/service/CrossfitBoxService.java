@@ -28,7 +28,6 @@ public class CrossfitBoxService {
     public CrossfitBoxDto createCrossfitBox(CrossfitBoxCreateDto crossfitBoxCreateDto){
         CrossfitBox crossfitBox = CrossfitBox.create(crossfitBoxCreateDto);
 
-        // 주소를 기반으로 위도/경도 자동 설정 (실패 시 예외 발생)
         if (crossfitBoxCreateDto.getAddress() != null && crossfitBoxCreateDto.getAddress().getAddressLine1() != null) {
             GeocodingService.Coordinates coords = geocodingService.getCoordinates(crossfitBoxCreateDto.getAddress().getAddressLine1())
                     .orElseThrow(() -> new IllegalStateException("주소를 좌표로 변환할 수 없습니다. 주소를 확인해주세요."));
@@ -75,22 +74,18 @@ public class CrossfitBoxService {
         CrossfitBox crossfitBox = crossfitBoxRepository.findById(crossfitBoxId)
                 .orElseThrow(() -> new IllegalArgumentException("크로스핏박스를 찾을 수 없습니다."));
 
-        // 기본 정보 업데이트
         crossfitBox.updateInfo(updateDto.getName(), updateDto.getPhoneNumber(), updateDto.getEtcInfo(), updateDto.getDropInFee());
 
-        // 주소 업데이트
         if (updateDto.getAddress() != null) {
             Address newAddress = Address.create(updateDto.getAddress());
             crossfitBox.updateAddress(newAddress);
 
-            // 주소 변경 시 좌표 재설정
             if (updateDto.getAddress().getAddressLine1() != null) {
                 geocodingService.getCoordinates(updateDto.getAddress().getAddressLine1())
                         .ifPresent(coords -> crossfitBox.updateCoordinates(coords.latitude(), coords.longitude()));
             }
         }
 
-        // 시설 정보 업데이트
         if (updateDto.getUsageInfo() != null) {
             CrossfitBox.UsageInfo newUsageInfo = CrossfitBox.UsageInfo.builder()
                     .parking(updateDto.getUsageInfo().getParking())

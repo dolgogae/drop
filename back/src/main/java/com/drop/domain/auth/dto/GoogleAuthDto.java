@@ -15,7 +15,4 @@ public class GoogleAuthDto {
     @NotBlank
     @Schema(description = "Google ID Token", example = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...")
     private String idToken;
-
-    @Schema(description = "Google Access Token")
-    private String accessToken;
 }

@@ -93,13 +93,12 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(customUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        provider.setHideUserNotFoundExceptions(false); // UsernameNotFoundException을 그대로 전달
+        provider.setHideUserNotFoundExceptions(false);
         return provider;
     }
 
     @Bean
     public AuthenticationManager authenticationManager() {
-        // 우리가 만든 Provider만 사용하도록 명시적으로 설정
         return new ProviderManager(authenticationProvider());
     }
 
@@ -123,7 +122,6 @@ public class SecurityConfig {
         @Override
         public void configure(HttpSecurity builder) {
             log.info("SecurityConfiguration.CustomFilterConfigurer.configure execute");
-            // 우리가 만든 AuthenticationManager Bean 사용
             JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager(),
                     jwtTokenProvider, aes128Service, userService, redisUtils);
             JwtVerificationFilter jwtVerificationFilter = new JwtVerificationFilter(jwtTokenProvider, redisUtils);

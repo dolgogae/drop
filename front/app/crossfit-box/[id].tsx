@@ -6,7 +6,6 @@ import {
   Alert,
   Animated,
   Linking,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -73,7 +72,6 @@ const DAY_LABELS: Record<string, string> = {
 
 const DAYS_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-// 05:00 ~ 24:00 (38블록)
 const TIME_SLOTS: string[] = [];
 for (let hour = 5; hour < 24; hour++) {
   TIME_SLOTS.push(`${hour.toString().padStart(2, '0')}:00`);
@@ -104,7 +102,7 @@ export default function CrossfitBoxDetailScreen() {
     y: 0,
   });
   const toastOpacity = useRef(new Animated.Value(0)).current;
-  const toastTimeout = useRef<NodeJS.Timeout | null>(null);
+  const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (className: string, startTime: string, endTime: string, color: string, pageX: number, pageY: number) => {
     if (toastTimeout.current) {
@@ -221,12 +219,10 @@ export default function CrossfitBoxDetailScreen() {
     setIsSettingHomeBox(true);
     try {
       if (isCurrentHomeBox) {
-        // 해제
         await axiosInstance.delete('/mypage/home-box');
         setCurrentHomeBoxId(null);
         Alert.alert('My Box 해제', `${crossfitBox.name}이(가) My Box에서 해제되었습니다.`);
       } else {
-        // 설정
         await axiosInstance.patch(`/mypage/home-box/${crossfitBox.id}`);
         setCurrentHomeBoxId(crossfitBox.id);
         Alert.alert('My Box 설정', `${crossfitBox.name}이(가) My Box로 설정되었습니다.`);
@@ -433,7 +429,6 @@ export default function CrossfitBoxDetailScreen() {
         {schedule && schedule.schedules && schedule.schedules.length > 0 && (() => {
           const timeToIndex = (t: string) => TIME_SLOTS.indexOf(t);
 
-          // 일정이 있는 시간 인덱스 세트 계산
           const usedTimeIndices = new Set<number>();
           schedule.schedules.forEach((daySchedule) => {
             if (daySchedule.isClosed) return;
@@ -447,13 +442,10 @@ export default function CrossfitBoxDetailScreen() {
             });
           });
 
-          // 일정이 없으면 표시하지 않음
           if (usedTimeIndices.size === 0) return null;
 
-          // 사용되는 시간 인덱스를 정렬
           const sortedIndices = Array.from(usedTimeIndices).sort((a, b) => a - b);
 
-          // 연속되지 않는 구간을 찾아서 그룹핑
           const timeGroups: { indices: number[]; startTime: string; endTime: string }[] = [];
           let currentGroup: number[] = [];
 
@@ -475,7 +467,6 @@ export default function CrossfitBoxDetailScreen() {
               }
             }
           });
-          // 마지막 그룹 추가
           if (currentGroup.length > 0) {
             timeGroups.push({
               indices: [...currentGroup],
@@ -500,7 +491,6 @@ export default function CrossfitBoxDetailScreen() {
             return null;
           };
 
-          // 해당 시간에 어느 요일에서든 일정이 시작하는지 확인
           const isStartTime = (t: string) => {
             return schedule.schedules.some((daySchedule) => {
               if (daySchedule.isClosed) return false;
@@ -831,7 +821,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  // 그리드 스타일
   gridHeaderRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
@@ -914,7 +903,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#ddd',
   },
-  // 토스트 스타일
   toast: {
     position: 'absolute',
     width: 200,

@@ -17,10 +17,3 @@ export enum LocationMode {
   LAST = 'last',
 }
 
-/**
- * 위치 모드에 따른 표시 텍스트
- */
-export const LocationModeText: Record<LocationMode, string> = {
-  [LocationMode.CURRENT]: '현재 위치 기준',
-  [LocationMode.LAST]: '마지막으로 본 위치',
-};

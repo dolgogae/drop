@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import {
   GOOGLE_WEB_CLIENT_ID,
   GOOGLE_IOS_CLIENT_ID,
@@ -20,12 +21,18 @@ export function useGoogleAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [authResult, setAuthResult] = useState<GoogleAuthResult | null>(null);
 
+  const redirectUri = makeRedirectUri({
+    scheme: 'drop-front',
+    preferLocalhost: false,
+  });
+
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
     androidClientId: GOOGLE_ANDROID_CLIENT_ID,
     webClientId: GOOGLE_WEB_CLIENT_ID,
     scopes: ['openid', 'profile', 'email'],
+    redirectUri,
   });
 
   useEffect(() => {

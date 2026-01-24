@@ -33,7 +33,6 @@ public class ScheduleService {
     public ScheduleListDto getSchedule(Long crossfitBoxId) {
         List<CrossfitBoxSchedule> schedules = scheduleRepository.findByCrossfitBoxIdWithTimeSlots(crossfitBoxId);
 
-        // 7일치 전체 반환 (없는 요일은 빈 스케줄로)
         List<ScheduleDto> fullSchedules = new ArrayList<>();
         Map<DayOfWeek, CrossfitBoxSchedule> scheduleMap = schedules.stream()
                 .collect(Collectors.toMap(CrossfitBoxSchedule::getDayOfWeek, s -> s, (existing, replacement) -> existing));
@@ -64,7 +63,6 @@ public class ScheduleService {
         CrossfitBox crossfitBox = crossfitBoxRepository.findById(crossfitBoxId)
                 .orElseThrow(() -> new IllegalArgumentException("CrossfitBox를 찾을 수 없습니다."));
 
-        // 기존 스케줄 조회
         Map<DayOfWeek, CrossfitBoxSchedule> existingSchedules =
                 scheduleRepository.findByCrossfitBoxId(crossfitBoxId).stream()
                         .collect(Collectors.toMap(CrossfitBoxSchedule::getDayOfWeek, s -> s, (existing, replacement) -> existing));
@@ -73,12 +71,10 @@ public class ScheduleService {
             CrossfitBoxSchedule schedule = existingSchedules.get(dto.getDayOfWeek());
 
             if (schedule == null) {
-                // 새로 생성
                 schedule = CrossfitBoxSchedule.create(crossfitBox, dto.getDayOfWeek());
                 scheduleRepository.save(schedule);
             }
 
-            // 업데이트
             updateScheduleFromDto(schedule, dto);
         }
 
@@ -93,7 +89,6 @@ public class ScheduleService {
         CrossfitBox crossfitBox = crossfitBoxRepository.findById(crossfitBoxId)
                 .orElseThrow(() -> new IllegalArgumentException("CrossfitBox를 찾을 수 없습니다."));
 
-        // 기존 스케줄 조회
         Map<DayOfWeek, CrossfitBoxSchedule> existingSchedules =
                 scheduleRepository.findByCrossfitBoxId(crossfitBoxId).stream()
                         .collect(Collectors.toMap(CrossfitBoxSchedule::getDayOfWeek, s -> s, (existing, replacement) -> existing));
@@ -106,10 +101,8 @@ public class ScheduleService {
                 scheduleRepository.save(schedule);
             }
 
-            // 휴무 처리
             schedule.updateIsClosed(updateDto.getIsClosed());
 
-            // 휴무가 아닌 경우 시간 슬롯 업데이트
             if (!Boolean.TRUE.equals(updateDto.getIsClosed())) {
                 schedule.clearTimeSlots();
                 addTimeSlotsFromDto(schedule, updateDto.getTimeSlots());

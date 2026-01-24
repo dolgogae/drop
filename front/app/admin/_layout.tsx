@@ -1,11 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AdminLayout() {
-  const router = useRouter();
-
   return (
     <Stack
       screenOptions={{

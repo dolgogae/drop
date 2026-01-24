@@ -37,7 +37,6 @@ public class AES128Service {
         cipher = Cipher.getInstance(INSTANCE_TYPE);
     }
 
-    // AES 암호화
     public String encryptAes(String plaintext) {
         try {
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
@@ -48,7 +47,6 @@ public class AES128Service {
         }
     }
 
-    // AES 복호화
     public String decryptAes(String plaintext) {
         try {
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
