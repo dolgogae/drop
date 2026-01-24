@@ -37,7 +37,6 @@ public class DashboardService {
 
         LocationMode nearbyBasis = (locationMode != null) ? locationMode : LocationMode.CURRENT;
 
-        // 홈박스 정보 조회
         DashboardSummaryDto.DashboardBoxDto dashboardBoxDto = null;
         Member member = memberRepository.findById(memberId).orElse(null);
         if (member != null && member.getHomeBox() != null) {

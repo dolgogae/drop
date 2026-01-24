@@ -36,7 +36,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
                                                 HttpServletResponse response) throws AuthenticationException {
-        // ServletInputStream을 LoginDto 객체로 역직렬화
         ObjectMapper objectMapper = new ObjectMapper();
         UserDto userDto = objectMapper.readValue(request.getInputStream(), UserDto.class);
         UsernamePasswordAuthenticationToken authenticationToken =
@@ -64,7 +63,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 .findUserAndUpdateTokens(customUserDetails.getId(), role, accessToken, refreshToken);
         log.info("login success = {}", findUser);
 
-        // 로그인 성공시 Refresh Token Redis 저장 ( key = Email / value = Refresh Token )
         long refreshTokenExpirationMillis = jwtTokenProvider.getRefreshTokenExpirationMillis();
         redisUtils.setData(findUser.getEmail(), refreshToken, refreshTokenExpirationMillis);
 

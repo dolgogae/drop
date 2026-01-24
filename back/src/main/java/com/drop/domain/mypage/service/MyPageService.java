@@ -90,8 +90,6 @@ public class MyPageService {
     public void logout(Long memberId, String accessToken) {
         Member member = findMemberById(memberId);
         member.clearTokens();
-
-        // Redis에 토큰을 블랙리스트로 등록 (30분간 유지)
         redisUtils.setData("BL:" + accessToken, "logout", 1800000L);
     }
 
@@ -99,7 +97,6 @@ public class MyPageService {
     public void withdraw(Long memberId) {
         Member member = findMemberById(memberId);
 
-        // 프로필 이미지 삭제
         if (member.getProfileImage() != null) {
             deleteProfileImageFile(member.getProfileImage());
         }
@@ -119,7 +116,6 @@ public class MyPageService {
 
         Member member = findMemberById(memberId);
 
-        // 기존 이미지 삭제
         if (member.getProfileImage() != null) {
             deleteProfileImageFile(member.getProfileImage());
         }
@@ -183,7 +179,6 @@ public class MyPageService {
             throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
         }
 
-        // 5MB 제한
         if (file.getSize() > 5 * 1024 * 1024) {
             throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED);
         }

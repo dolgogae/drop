@@ -41,7 +41,6 @@ public class GoogleAuthService {
     public TokenDto authenticateWithGoogle(String idToken) {
         GoogleUserInfo userInfo = verifyAndExtractUserInfo(idToken);
 
-        // Check if email already exists in Gym (can't use Google OAuth for gym registration)
         if (authenticatableRepository.existsByEmail(userInfo.getEmail())) {
             Optional<Member> existingMember = memberRepository.findByEmail(userInfo.getEmail());
             if (existingMember.isEmpty()) {

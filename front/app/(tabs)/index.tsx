@@ -52,22 +52,21 @@ interface Cluster {
 }
 
 const { width, height } = Dimensions.get('window');
-const CLUSTER_DISTANCE = 0.01; // 클러스터링 거리 (약 1km)
+const CLUSTER_DISTANCE = 0.01;
 
-const DEBOUNCE_DELAY = 300; // 디바운스 딜레이 (ms)
+const DEBOUNCE_DELAY = 300;
 
 export default function MapScreen() {
   const router = useRouter();
   const { lat, lng, t } = useLocalSearchParams<{ lat?: string; lng?: string; t?: string }>();
   const mapRef = useRef<typeof MapView>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [crossfitBoxes, setCrossfitBoxes] = useState<CrossfitBox[]>([]);
   const [myCrossfitBoxIds, setMyCrossfitBoxIds] = useState<Set<number>>(new Set());
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [addingCrossfitBoxId, setAddingCrossfitBoxId] = useState<number | null>(null);
 
-  // 파라미터로 전달된 위치가 있으면 사용, 없으면 서울 기본값
   const initialLat = lat ? parseFloat(lat) : 37.5665;
   const initialLng = lng ? parseFloat(lng) : 126.978;
 
@@ -78,14 +77,12 @@ export default function MapScreen() {
     longitudeDelta: 0.05,
   });
 
-  // 탭이 포커스될 때마다 현재 위치로 이동
   useFocusEffect(
     useCallback(() => {
       const moveToCurrentLocation = async () => {
         try {
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
-            // 권한이 없으면 기본 위치 사용
             fetchCrossfitBoxesByBounds(region, true);
             return;
           }
@@ -116,7 +113,6 @@ export default function MapScreen() {
   );
 
   useEffect(() => {
-    // 컴포넌트 언마운트 시 타이머 정리
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
@@ -124,7 +120,6 @@ export default function MapScreen() {
     };
   }, []);
 
-  // 파라미터로 위치가 전달되면 해당 위치로 이동
   useEffect(() => {
     if (lat && lng) {
       const newLat = parseFloat(lat);
@@ -141,7 +136,6 @@ export default function MapScreen() {
     }
   }, [lat, lng, t]);
 
-  // 크로스핏박스 변경 이벤트 구독 (홈에서 제거 시 동기화)
   useEffect(() => {
     const unsubscribe = crossfitBoxEvents.subscribe(() => {
       fetchMyCrossfitBoxes();
@@ -149,7 +143,6 @@ export default function MapScreen() {
     return unsubscribe;
   }, []);
 
-  // 클러스터링을 useMemo로 최적화
   const clusters = useMemo(() => {
     if (crossfitBoxes.length === 0) return [];
 
@@ -183,7 +176,6 @@ export default function MapScreen() {
         }
       });
 
-      // 클러스터 중심 재계산
       if (cluster.count > 1) {
         cluster.latitude =
           cluster.crossfitBoxes.reduce((sum, c) => sum + c.latitude, 0) / cluster.count;
@@ -200,12 +192,10 @@ export default function MapScreen() {
 
   const fetchCrossfitBoxesByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
     try {
-      // 초기 로딩일 때만 로딩 인디케이터 표시
       if (isInitial) {
         setIsInitialLoad(true);
       }
 
-      // region에서 bounds 계산
       const swLat = currentRegion.latitude - currentRegion.latitudeDelta / 2;
       const swLng = currentRegion.longitude - currentRegion.longitudeDelta / 2;
       const neLat = currentRegion.latitude + currentRegion.latitudeDelta / 2;
@@ -273,19 +263,16 @@ export default function MapScreen() {
   };
 
   const handleClusterPress = (cluster: Cluster) => {
-    // 마커 클릭 시 바로 크로스핏박스 정보 표시
     setSelectedCluster(cluster);
   };
 
   const handleRegionChangeComplete = useCallback((newRegion: Region) => {
     setRegion(newRegion);
 
-    // 기존 타이머 취소
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
-    // 디바운스 적용: 지도 이동이 멈춘 후 일정 시간 후에 API 호출
     debounceRef.current = setTimeout(() => {
       fetchCrossfitBoxesByBounds(newRegion);
     }, DEBOUNCE_DELAY);
@@ -341,7 +328,6 @@ export default function MapScreen() {
     );
   };
 
-  // 웹에서는 대체 UI 표시
   if (Platform.OS === 'web') {
     return (
       <SafeAreaView style={styles.container}>
@@ -417,7 +403,6 @@ export default function MapScreen() {
         </MapView>
       )}
 
-      {/* 하단 리스트 */}
       {selectedCluster && (
         <View style={styles.bottomSheet}>
           <View style={styles.bottomSheetHeader}>

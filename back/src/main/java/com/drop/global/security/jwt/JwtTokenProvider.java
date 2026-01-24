@@ -49,7 +49,6 @@ public class JwtTokenProvider {
     private long refreshTokenExpirationMillis;
     private Key key;
 
-    // Bean 등록후 Key SecretKey HS256 decode
     @PostConstruct
     public void init() {
         String base64EncodedSecretKey = encodeBase64SecretKey(this.secretKey);
@@ -90,15 +89,12 @@ public class JwtTokenProvider {
                 .compact();
 
         return TokenDto.builder()
-                .grantType(BEARER_TYPE)
-                .authorizationType(AUTHORIZATION_HEADER)
                 .accessToken(accessToken)
                 .accessTokenExpiresIn(accessTokenExpiresIn.getTime())
                 .refreshToken(refreshToken)
                 .build();
     }
 
-    // JWT 토큰을 복호화하여 토큰 정보를 반환
     public Authentication getAuthentication(String accessToken) {
         Claims claims = parseClaims(accessToken);
 
@@ -119,12 +115,10 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());
     }
 
-    // JWT 토큰에서 email 추출
     public String getUserEmail(String refreshToken){
         return parseClaims(refreshToken).getSubject();
     }
 
-    // JWT 토큰에서 userId 추출
     public Long getUserId(String token) {
         Object userId = parseClaims(token).get("userId");
         return userId != null ? Long.valueOf(userId.toString()) : null;
@@ -135,7 +129,6 @@ public class JwtTokenProvider {
         return UserRole.fromKey(role);
     }
 
-    // 토큰 검증
     public boolean validateToken(String token, HttpServletResponse response) {
         try {
             parseClaims(token);
@@ -186,7 +179,6 @@ public class JwtTokenProvider {
         return new Date(date.getTime() + expirationMillisecond);
     }
 
-    // Token 복호화 및 예외 발생(토큰 만료, 시그니처 오류)시 Claims 객체가 안만들어짐.
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -204,7 +196,6 @@ public class JwtTokenProvider {
         response.setHeader("Refresh", refreshToken);
     }
 
-    // Request Header에 Access Token 정보를 추출하는 메서드
     public String resolveAccessToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
@@ -213,7 +204,6 @@ public class JwtTokenProvider {
         return null;
     }
 
-    // Request Header에 Refresh Token 정보를 추출하는 메서드
     public String resolveRefreshToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(REFRESH_HEADER);
         if (StringUtils.hasText(bearerToken)) {

@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { HomeState, LocationMode, LocationModeText } from '../../constants/enums';
+import { HomeState, LocationMode } from '../../constants/enums';
 import axiosInstance from '../../utils/axiosInstance';
 import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
 
@@ -55,7 +55,6 @@ export default function HomeScreen() {
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
 
-  // 위치 권한 확인 및 요청
   const checkLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.getForegroundPermissionsAsync();
@@ -67,14 +66,12 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // 위치 권한 요청
   const requestLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setLocationPermission(status);
 
       if (status === Location.PermissionStatus.GRANTED) {
-        // 권한 허용되면 위치 가져오기
         await getCurrentLocation();
         fetchHomeSummary();
       } else {
@@ -86,7 +83,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // 현재 위치 가져오기
   const getCurrentLocation = useCallback(async () => {
     try {
       const location = await Location.getCurrentPositionAsync({
@@ -98,18 +94,15 @@ export default function HomeScreen() {
 
       setCurrentLocation({ lat, lng });
 
-      // 좌표를 주소로 변환
       try {
         const [address] = await Location.reverseGeocodeAsync({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         });
         if (address) {
-          // 한국 주소: region(시/도), subregion(구), district(동)
           let displayAddress = '';
           if (address.region) {
             const region = address.region.replace(/특별시|광역시|도$/g, '');
-            // subregion(구) 또는 district(동) 사용
             const detail = address.subregion || address.district || '';
             displayAddress = detail ? `${region} ${detail}` : region;
           } else if (address.city) {
@@ -128,7 +121,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // 홈 데이터 조회
   const fetchHomeSummary = useCallback(async (location?: { lat: number; lng: number } | null) => {
     try {
       setHomeState(HomeState.LOADING);
@@ -162,7 +154,6 @@ export default function HomeScreen() {
 
   const isInitialMount = useRef(true);
 
-  // 초기 로딩
   useEffect(() => {
     const initializeHome = async () => {
       const permissionStatus = await checkLocationPermission();
@@ -171,10 +162,8 @@ export default function HomeScreen() {
         const location = await getCurrentLocation();
         await fetchHomeSummary(location);
       } else if (permissionStatus === Location.PermissionStatus.DENIED) {
-        // 이전에 거부한 경우 - 권한 없이 데이터 로드
         setHomeState(HomeState.PERMISSION_DENIED);
       } else {
-        // 아직 결정하지 않은 경우 - 권한 요청
         await requestLocationPermission();
       }
     };
@@ -182,16 +171,13 @@ export default function HomeScreen() {
     initializeHome();
   }, []);
 
-  // 탭 포커스 시 데이터 갱신
   useFocusEffect(
     useCallback(() => {
-      // 초기 마운트 시에는 스킵 (useEffect에서 이미 처리)
       if (isInitialMount.current) {
         isInitialMount.current = false;
         return;
       }
 
-      // 탭에 다시 포커스될 때 데이터 갱신 (로딩 표시 없이 백그라운드에서)
       const refreshData = async () => {
         try {
           const { status } = await Location.getForegroundPermissionsAsync();
@@ -219,14 +205,12 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // 앱 포그라운드 복귀 시 데이터 갱신
   useEffect(() => {
     let lastFetchTime = Date.now();
-    const REFRESH_INTERVAL = 10 * 60 * 1000; // 10분
+    const REFRESH_INTERVAL = 10 * 60 * 1000;
 
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
-        // 권한 상태 다시 확인 (설정에서 변경했을 수 있음)
         const status = await checkLocationPermission();
 
         const now = Date.now();
@@ -246,7 +230,6 @@ export default function HomeScreen() {
     return () => subscription.remove();
   }, [fetchHomeSummary, checkLocationPermission, getCurrentLocation]);
 
-  // 크로스핏박스 변경 이벤트 구독 (맵에서 추가/제거 시 동기화)
   useEffect(() => {
     const refreshCrossfitBoxes = async () => {
       try {
@@ -308,11 +291,9 @@ export default function HomeScreen() {
     router.push(`/crossfit-box/${crossfitBox.crossfitBoxId}` as any);
   };
 
-  // 즐겨찾기 토글
   const handleToggleFavorite = async (crossfitBoxId: number) => {
     if (!summary) return;
 
-    // 로딩 상태 설정
     setSummary({
       ...summary,
       myCrossfitBoxesPreview: summary.myCrossfitBoxesPreview.map((c) =>
@@ -337,7 +318,6 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error('즐겨찾기 토글 실패:', error);
-      // 로딩 상태 해제
       setSummary((prev) => {
         if (!prev) return prev;
         return {
@@ -350,11 +330,9 @@ export default function HomeScreen() {
     }
   };
 
-  // 내 크로스핏박스에서 제거
   const handleRemoveCrossfitBox = async (crossfitBoxId: number) => {
     try {
       await axiosInstance.delete(`/member-crossfit-box/${crossfitBoxId}`);
-      // 성공 시 목록에서 제거
       if (summary) {
         setSummary({
           ...summary,
@@ -375,7 +353,6 @@ export default function HomeScreen() {
     }
   };
 
-  // 설정 앱 열기
   const openSettings = () => {
     if (Platform.OS === 'ios') {
       Linking.openURL('app-settings:');
@@ -384,12 +361,10 @@ export default function HomeScreen() {
     }
   };
 
-  // 위치 권한 없이 계속 진행
   const continueWithoutLocation = () => {
     fetchHomeSummary();
   };
 
-  // 로딩 상태 - 스켈레톤 UI
   if (homeState === HomeState.LOADING) {
     return (
       <SafeAreaView style={styles.container}>
@@ -417,7 +392,6 @@ export default function HomeScreen() {
     );
   }
 
-  // 위치 권한 거부 상태 (FR-6)
   if (homeState === HomeState.PERMISSION_DENIED) {
     return (
       <SafeAreaView style={styles.container}>
@@ -458,7 +432,6 @@ export default function HomeScreen() {
     );
   }
 
-  // 오류 상태
   if (homeState === HomeState.ERROR) {
     return (
       <SafeAreaView style={styles.container}>
@@ -671,8 +644,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-
-  // 홈 박스 카드
   homeBoxCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -724,8 +695,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-
-  // 주변 박스 카드
   nearbyCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -779,8 +748,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-
-  // 권한 안내 카드 (FR-6)
   permissionCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -832,8 +799,6 @@ const styles = StyleSheet.create({
   permissionButtonTextSecondary: {
     color: '#588157',
   },
-
-  // 섹션 헤더
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -849,8 +814,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#588157',
   },
-
-  // 내 크로스핏박스 미리보기
   crossfitBoxPreviewScroll: {
     marginHorizontal: -16,
   },
@@ -914,8 +877,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // 빈 상태
   emptyState: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -947,8 +908,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
   },
-
-  // 오류 상태
   errorText: {
     fontSize: 16,
     color: '#666',
@@ -967,8 +926,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-
-  // FAB
   fab: {
     position: 'absolute',
     right: 20,
@@ -985,8 +942,16 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-
-  // 스켈레톤
+  summaryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   skeleton: {
     overflow: 'hidden',
   },

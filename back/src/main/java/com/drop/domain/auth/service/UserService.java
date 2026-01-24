@@ -43,7 +43,6 @@ public class UserService {
                 new BusinessException(ErrorCode.USER_NOT_EXIST));
         user.setTokens(accessToken, refreshToken);
 
-        // Save to the correct repository based on role
         if (role == UserRole.MEMBER) {
             memberRepository.save((Member) user);
         } else if (role == UserRole.GYM) {
@@ -59,7 +58,6 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_ROLE_DOES_NOT_EXISTS);
         }
 
-        // Check if email already exists
         if (authenticatableRepository.existsByEmail(userCreateDto.getEmail())) {
             throw new BusinessException(ErrorCode.USER_EMAIL_ALREADY_EXISTS);
         }
