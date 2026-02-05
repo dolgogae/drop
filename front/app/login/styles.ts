@@ -122,6 +122,27 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
   },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  backLink: {
+    color: '#888',
+    fontSize: 14,
+    marginTop: 16,
+  },
+  gymAdminButton: {
+    marginTop: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  gymAdminText: {
+    color: '#888',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
 });
 
 export default styles;

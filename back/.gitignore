@@ -42,3 +42,7 @@ out/
 
 # Image upload folder
 /image/
+
+# Docker
+.env
+*.tar
