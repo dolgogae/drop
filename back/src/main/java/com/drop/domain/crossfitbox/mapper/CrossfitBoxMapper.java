@@ -13,7 +13,6 @@ import org.mapstruct.factory.Mappers;
 public interface CrossfitBoxMapper {
     CrossfitBoxMapper INSTANCE = Mappers.getMapper(CrossfitBoxMapper.class);
 
-    @Mapping(source = "usageInfo", target = "usageInfoDto")
     @Mapping(source = "address", target = "address", qualifiedByName = "addressToDto")
     CrossfitBoxDto toDto(CrossfitBox crossfitBox);
 

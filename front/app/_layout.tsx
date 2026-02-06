@@ -16,14 +16,16 @@ function RootLayoutNav() {
   const [isLoading, setIsLoading] = useState(true);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
+  const role = useSelector((state: RootState) => state.auth.role);
+
   useEffect(() => {
     const checkLogin = async () => {
       try {
         const savedTokens = await AsyncStorage.getItem(AUTH_TOKENS_KEY);
         if (savedTokens) {
-          const { accessToken, refreshToken } = JSON.parse(savedTokens);
+          const { accessToken, refreshToken, role } = JSON.parse(savedTokens);
           if (accessToken && refreshToken) {
-            dispatch(setTokens({ accessToken, refreshToken }));
+            dispatch(setTokens({ accessToken, refreshToken, role }));
           }
         }
       } catch (error) {
@@ -47,38 +49,19 @@ function RootLayoutNav() {
       return;
     }
 
-    // 로그인된 상태에서 역할 기반 라우팅
-    const checkRoleAndRedirect = async () => {
-      try {
-        const profileStr = await AsyncStorage.getItem('profile');
-        if (profileStr) {
-          const profile = JSON.parse(profileStr);
-          const isGym = profile.role === 'GYM';
+    // 로그인된 상태에서 역할 기반 라우팅 (Redux의 role로 동기 판단)
+    const isGym = role === 'GYM';
 
-          // GYM 사용자가 어드민이 아닌 곳에 있을 때
-          if (isGym && !inAdminGroup) {
-            router.replace('/admin');
-            return;
-          }
+    if (isGym && !inAdminGroup) {
+      router.replace('/admin');
+      return;
+    }
 
-          // 일반 사용자가 어드민에 있거나 로그인 페이지에 있을 때
-          if (!isGym && (inAdminGroup || inAuthGroup)) {
-            router.replace('/(tabs)');
-            return;
-          }
-        } else if (inAuthGroup) {
-          // 프로필이 없으면 일반 탭으로
-          router.replace('/(tabs)');
-        }
-      } catch (error) {
-        if (inAuthGroup) {
-          router.replace('/(tabs)');
-        }
-      }
-    };
-
-    checkRoleAndRedirect();
-  }, [isLoading, accessToken, segments]);
+    if (!isGym && (inAdminGroup || inAuthGroup)) {
+      router.replace('/(tabs)');
+      return;
+    }
+  }, [isLoading, accessToken, role, segments]);
 
   if (isLoading) {
     return <LoadingSpinner />;

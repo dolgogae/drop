@@ -1,5 +1,7 @@
 package com.drop.global.security.handler;
 
+import com.drop.global.enums.UserRole;
+import com.drop.global.security.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -28,9 +30,13 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("Login success - accessToken: {}", accessToken);
         log.info("Login success - refreshToken: {}", refreshToken);
 
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String role = UserRole.fromKey(userDetails.getUserRole()).name();
+
         Map<String, Object> tokenData = new HashMap<>();
         tokenData.put("accessToken", accessToken);
         tokenData.put("refreshToken", refreshToken);
+        tokenData.put("role", role);
 
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("status", 200);
