@@ -19,8 +19,8 @@ public class CrossfitBoxUpdateDto {
     @Schema(description = "박스명", example = "크로스핏 강남")
     private String name;
 
-    @Pattern(regexp = "^0\\d{2}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)")
-    @Schema(description = "전화번호 (xxx-xxxx-xxxx 형식)", example = "010-1234-5678")
+    @Pattern(regexp = "^0\\d{1,3}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678, 02-123-4567, 0504-1234-5678)")
+    @Schema(description = "전화번호 (010-1234-5678, 02-123-4567, 0504-1234-5678 형식)", example = "010-1234-5678")
     private String phoneNumber;
 
     @Schema(description = "기타 정보 (가까운 역 등)", example = "강남역 2번 출구 도보 5분")

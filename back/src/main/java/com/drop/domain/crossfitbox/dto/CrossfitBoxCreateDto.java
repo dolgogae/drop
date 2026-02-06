@@ -19,8 +19,8 @@ import javax.validation.constraints.Pattern;
 public class CrossfitBoxCreateDto extends UserCreateDto {
     private String name;
 
-    @Pattern(regexp = "^0\\d{2}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)")
-    @Schema(description = "전화번호 (xxx-xxxx-xxxx 형식)", example = "010-1234-5678")
+    @Pattern(regexp = "^0\\d{1,3}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678, 02-123-4567, 0504-1234-5678)")
+    @Schema(description = "전화번호 (010-1234-5678, 02-123-4567, 0504-1234-5678 형식)", example = "010-1234-5678")
     private String phoneNumber;
 
     private String etcInfo;    // nearby any stations

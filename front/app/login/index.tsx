@@ -240,12 +240,6 @@ export default function LoginScreen() {
         </Text>
       </TouchableOpacity>
 
-      <View style={styles.dividerContainer}>
-        <View style={styles.divider} />
-        <Text style={styles.dividerText}>{t('auth.or')}</Text>
-        <View style={styles.divider} />
-      </View>
-
       <TouchableOpacity
         style={[styles.socialButton, styles.googleButton]}
         onPress={handleGoogleLogin}

@@ -9,7 +9,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import styles from './styles';
 
 const AUTH_TOKENS_KEY = 'auth_tokens';
-const REMEMBER_EMAIL_KEY = 'remember_email_gym';
+const REMEMBER_ID_KEY = 'remember_id_gym';
 const AUTO_LOGIN_KEY = 'auto_login_gym';
 const PROFILE_KEY = 'profile';
 
@@ -18,22 +18,22 @@ export default function GymAdminLoginScreen() {
   const dispatch = useDispatch();
   const { t } = useI18n();
 
-  const [email, setEmail] = useState('');
+  const [boxId, setBoxId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
-  const [rememberEmail, setRememberEmail] = useState(false);
+  const [rememberId, setRememberId] = useState(false);
 
   useEffect(() => {
     const loadSavedSettings = async () => {
       try {
-        const [savedEmail, savedAutoLogin] = await Promise.all([
-          AsyncStorage.getItem(REMEMBER_EMAIL_KEY),
+        const [savedId, savedAutoLogin] = await Promise.all([
+          AsyncStorage.getItem(REMEMBER_ID_KEY),
           AsyncStorage.getItem(AUTO_LOGIN_KEY),
         ]);
-        if (savedEmail) {
-          setEmail(savedEmail);
-          setRememberEmail(true);
+        if (savedId) {
+          setBoxId(savedId);
+          setRememberId(true);
         }
         if (savedAutoLogin === 'true') {
           setAutoLogin(true);
@@ -80,10 +80,10 @@ export default function GymAdminLoginScreen() {
         );
       }
 
-      if (rememberEmail) {
-        promises.push(AsyncStorage.setItem(REMEMBER_EMAIL_KEY, email));
+      if (rememberId) {
+        promises.push(AsyncStorage.setItem(REMEMBER_ID_KEY, boxId));
       } else {
-        promises.push(AsyncStorage.removeItem(REMEMBER_EMAIL_KEY));
+        promises.push(AsyncStorage.removeItem(REMEMBER_ID_KEY));
       }
 
       await Promise.all(promises);
@@ -93,7 +93,7 @@ export default function GymAdminLoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!boxId || !password) {
       Alert.alert(t('validation.fillAll'));
       return;
     }
@@ -103,8 +103,8 @@ export default function GymAdminLoginScreen() {
       dispatch(clearProfile());
       await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
 
-      console.log('[GymAdminLogin] Attempting login with email:', email);
-      const response = await axiosInstance.post('/auth/login', { email, password });
+      console.log('[GymAdminLogin] Attempting login with id:', boxId);
+      const response = await axiosInstance.post('/auth/login', { email: boxId, password });
       const data = response.data;
       if (response.status === 200 && data.data?.accessToken) {
         const { accessToken, refreshToken } = data.data;
@@ -147,12 +147,11 @@ export default function GymAdminLoginScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder={t('auth.email')}
+        placeholder={t('auth.boxId')}
         placeholderTextColor="#A3B18A"
-        value={email}
-        onChangeText={setEmail}
+        value={boxId}
+        onChangeText={setBoxId}
         autoCapitalize="none"
-        keyboardType="email-address"
       />
       <TextInput
         style={styles.input}
@@ -176,12 +175,12 @@ export default function GymAdminLoginScreen() {
 
         <TouchableOpacity
           style={styles.checkboxRow}
-          onPress={() => setRememberEmail(!rememberEmail)}
+          onPress={() => setRememberId(!rememberId)}
         >
-          <View style={[styles.checkbox, rememberEmail && styles.checkboxChecked]}>
-            {rememberEmail && <Text style={styles.checkmark}>✓</Text>}
+          <View style={[styles.checkbox, rememberId && styles.checkboxChecked]}>
+            {rememberId && <Text style={styles.checkmark}>✓</Text>}
           </View>
-          <Text style={styles.checkboxLabel}>{t('auth.rememberEmail')}</Text>
+          <Text style={styles.checkboxLabel}>{t('auth.rememberId')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -195,7 +194,7 @@ export default function GymAdminLoginScreen() {
         <Text style={styles.link}>{t('auth.gymRegister')}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.back()} style={styles.linkBtn}>
+      <TouchableOpacity onPress={() => router.replace('/login')} style={styles.linkBtn}>
         <Text style={styles.backLink}>{t('auth.backToMemberLogin')}</Text>
       </TouchableOpacity>
     </View>
