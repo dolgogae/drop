@@ -1,13 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useState, useMemo } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AddressSearchModal, { AddressData } from '../../components/AddressSearchModal';
 import { useI18n } from '../../contexts/i18n';
 import axiosInstance from '../../utils/axiosInstance';
 import styles from './styles';
 
-// 전화번호 포맷팅 함수: 다양한 형식 지원 (010-1234-5678, 02-123-4567, 0504-1234-5678)
+const validatePassword = (password: string): boolean => {
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  const hasMinLength = password.length >= 8;
+  return hasLowercase && hasNumber && hasSpecialChar && hasMinLength;
+};
+
 const formatPhoneNumber = (value: string): string => {
   const numbers = value.replace(/[^0-9]/g, '');
 
@@ -32,21 +39,26 @@ const formatPhoneNumber = (value: string): string => {
   return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
 };
 
-// 전화번호 유효성 검사: 다양한 형식 지원
 const isValidPhoneNumber = (phone: string): boolean => {
   const pattern = /^0\d{1,3}-\d{3,4}-\d{4}$/;
   return pattern.test(phone);
 };
 
-export default function CrossfitBoxRegisterScreen() {
+export default function CrossfitBoxStandaloneRegisterScreen() {
   const router = useRouter();
   const { t } = useI18n();
-  const params = useLocalSearchParams<{
-    username: string;
-    email: string;
-    password: string;
-  }>();
 
+  // Basic info
+  const [username, setUsername] = useState('');
+  const [boxId, setBoxId] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+
+  // Validation states
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [passwordConfirmTouched, setPasswordConfirmTouched] = useState(false);
+
+  // CrossFit Box info
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -60,15 +72,19 @@ export default function CrossfitBoxRegisterScreen() {
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
   const [detailAddress, setDetailAddress] = useState('');
 
+  const isPasswordValid = useMemo(() => validatePassword(password), [password]);
+  const isPasswordMatch = useMemo(() => password === passwordConfirm, [password, passwordConfirm]);
+
+  const showPasswordError = passwordTouched && password.length > 0 && !isPasswordValid;
+  const showPasswordMismatch = passwordConfirmTouched && passwordConfirm.length > 0 && !isPasswordMatch;
+
   const handlePhoneNumberChange = (value: string) => {
     const formatted = formatPhoneNumber(value);
     setPhoneNumber(formatted);
 
-    // 입력 중에는 에러 메시지 초기화, 완성된 형태일 때만 검증
     if (formatted.length === 0) {
       setPhoneError('');
     } else if (formatted.length >= 12) {
-      // 최소 길이에 도달했을 때 유효성 검사
       if (!isValidPhoneNumber(formatted)) {
         setPhoneError(t('validation.invalidPhoneNumber'));
       } else {
@@ -84,6 +100,21 @@ export default function CrossfitBoxRegisterScreen() {
   };
 
   const handleRegister = async () => {
+    // Basic validation
+    if (!username || !boxId || !password || !passwordConfirm) {
+      Alert.alert(t('validation.fillAll'));
+      return;
+    }
+    if (!isPasswordValid) {
+      Alert.alert(t('validation.invalidPassword'));
+      return;
+    }
+    if (!isPasswordMatch) {
+      Alert.alert(t('validation.passwordMismatch'));
+      return;
+    }
+
+    // CrossFit Box validation
     if (!name || !selectedAddress || !phoneNumber) {
       Alert.alert(t('crossfitBox.requiredFields'));
       return;
@@ -97,9 +128,9 @@ export default function CrossfitBoxRegisterScreen() {
     setLoading(true);
     try {
       const response = await axiosInstance.post('/auth/sign-up/crossfit-box', {
-        username: params.username,
-        email: params.email,
-        password: params.password,
+        username,
+        email: boxId,
+        password,
         name,
         phoneNumber,
         etcInfo,
@@ -121,7 +152,7 @@ export default function CrossfitBoxRegisterScreen() {
 
       if (response.status === 200 || response.status === 201) {
         Alert.alert(t('auth.registerSuccess'), t('auth.redirectToLogin'));
-        router.replace('/login');
+        router.replace('/login/gym-admin');
       }
     } catch (error: any) {
       const message = error.response?.data?.message || t('validation.error');
@@ -156,6 +187,50 @@ export default function CrossfitBoxRegisterScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>{t('crossfitBox.title')}</Text>
 
+        {/* Basic Info Section */}
+        <Text style={styles.sectionTitle}>{t('info.basic')}</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={t('auth.name')}
+          placeholderTextColor="#A3B18A"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder={t('auth.boxId')}
+          placeholderTextColor="#A3B18A"
+          value={boxId}
+          onChangeText={setBoxId}
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={[styles.input, showPasswordError && styles.inputError]}
+          placeholder={t('auth.password')}
+          placeholderTextColor="#A3B18A"
+          value={password}
+          onChangeText={setPassword}
+          onBlur={() => setPasswordTouched(true)}
+          secureTextEntry
+        />
+        {showPasswordError && (
+          <Text style={styles.errorText}>{t('validation.invalidPassword')}</Text>
+        )}
+        <TextInput
+          style={[styles.input, showPasswordMismatch && styles.inputError]}
+          placeholder={t('auth.passwordConfirm')}
+          placeholderTextColor="#A3B18A"
+          value={passwordConfirm}
+          onChangeText={setPasswordConfirm}
+          onBlur={() => setPasswordConfirmTouched(true)}
+          secureTextEntry
+        />
+        {showPasswordMismatch && (
+          <Text style={styles.errorText}>{t('validation.passwordMismatch')}</Text>
+        )}
+
+        {/* CrossFit Box Info Section */}
         <Text style={styles.sectionTitle}>{t('crossfitBox.info')}</Text>
         <TextInput
           style={styles.input}
@@ -244,8 +319,8 @@ export default function CrossfitBoxRegisterScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.back()} style={styles.linkBtn}>
-          <Text style={styles.link}>{t('common.back')}</Text>
+        <TouchableOpacity onPress={() => router.push('/login/gym-admin')} style={styles.linkBtn}>
+          <Text style={styles.link}>{t('auth.goToLogin')}</Text>
         </TouchableOpacity>
       </View>
 

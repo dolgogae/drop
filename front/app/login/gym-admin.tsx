@@ -4,38 +4,36 @@ import React, { useState, useEffect } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useI18n } from '../../contexts/i18n';
-import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { setTokens, clearTokens, clearProfile } from '../../store';
 import axiosInstance from '../../utils/axiosInstance';
 import styles from './styles';
 
 const AUTH_TOKENS_KEY = 'auth_tokens';
-const REMEMBER_EMAIL_KEY = 'remember_email';
-const AUTO_LOGIN_KEY = 'auto_login';
+const REMEMBER_ID_KEY = 'remember_id_gym';
+const AUTO_LOGIN_KEY = 'auto_login_gym';
 const PROFILE_KEY = 'profile';
 
-export default function LoginScreen() {
+export default function GymAdminLoginScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { t } = useI18n();
-  const { signInWithGoogle, isLoading: googleLoading, isReady: googleReady } = useGoogleAuth();
 
-  const [email, setEmail] = useState('');
+  const [boxId, setBoxId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
-  const [rememberEmail, setRememberEmail] = useState(false);
+  const [rememberId, setRememberId] = useState(false);
 
   useEffect(() => {
     const loadSavedSettings = async () => {
       try {
-        const [savedEmail, savedAutoLogin] = await Promise.all([
-          AsyncStorage.getItem(REMEMBER_EMAIL_KEY),
+        const [savedId, savedAutoLogin] = await Promise.all([
+          AsyncStorage.getItem(REMEMBER_ID_KEY),
           AsyncStorage.getItem(AUTO_LOGIN_KEY),
         ]);
-        if (savedEmail) {
-          setEmail(savedEmail);
-          setRememberEmail(true);
+        if (savedId) {
+          setBoxId(savedId);
+          setRememberId(true);
         }
         if (savedAutoLogin === 'true') {
           setAutoLogin(true);
@@ -49,10 +47,8 @@ export default function LoginScreen() {
 
   const fetchAndSaveProfile = async (accessToken: string) => {
     try {
-      // 기존 프로필 먼저 삭제
       await AsyncStorage.removeItem(PROFILE_KEY);
 
-      // 새 토큰으로 직접 프로필 조회
       const response = await axiosInstance.get('/mypage/profile', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -72,7 +68,6 @@ export default function LoginScreen() {
     try {
       const promises: Promise<void>[] = [];
 
-      // 자동 로그인이 체크된 경우 토큰 저장
       if (autoLogin) {
         promises.push(
           AsyncStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify({ accessToken, refreshToken })),
@@ -85,11 +80,10 @@ export default function LoginScreen() {
         );
       }
 
-      // 아이디 기억하기가 체크된 경우 이메일 저장
-      if (rememberEmail) {
-        promises.push(AsyncStorage.setItem(REMEMBER_EMAIL_KEY, email));
+      if (rememberId) {
+        promises.push(AsyncStorage.setItem(REMEMBER_ID_KEY, boxId));
       } else {
-        promises.push(AsyncStorage.removeItem(REMEMBER_EMAIL_KEY));
+        promises.push(AsyncStorage.removeItem(REMEMBER_ID_KEY));
       }
 
       await Promise.all(promises);
@@ -99,22 +93,28 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!boxId || !password) {
       Alert.alert(t('validation.fillAll'));
       return;
     }
     setLoading(true);
     try {
-      // 기존 인증 정보 정리
       dispatch(clearTokens());
       dispatch(clearProfile());
       await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
 
-      console.log('[Login] Attempting login with email:', email);
-      const response = await axiosInstance.post('/auth/login', { email, password });
+      console.log('[GymAdminLogin] Attempting login with id:', boxId);
+      const response = await axiosInstance.post('/auth/login', { email: boxId, password });
       const data = response.data;
       if (response.status === 200 && data.data?.accessToken) {
         const { accessToken, refreshToken } = data.data;
+
+        const profile = await fetchAndSaveProfile(accessToken);
+
+        if (profile?.role !== 'GYM') {
+          Alert.alert(t('auth.loginFailed'), t('auth.gymAdminOnly'));
+          return;
+        }
 
         await saveLoginSettings(accessToken, refreshToken);
 
@@ -123,13 +123,7 @@ export default function LoginScreen() {
           refreshToken,
         }));
 
-        // 프로필 조회 후 역할에 따라 라우팅
-        const profile = await fetchAndSaveProfile(accessToken);
-        if (profile?.role === 'GYM') {
-          router.replace('/admin');
-        } else {
-          router.replace('/(tabs)');
-        }
+        router.replace('/admin');
       } else {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
       }
@@ -146,62 +140,18 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    // 기존 인증 정보 정리
-    dispatch(clearTokens());
-    dispatch(clearProfile());
-    await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
-
-    const result = await signInWithGoogle();
-
-    if (result.success && result.idToken) {
-      try {
-        const response = await axiosInstance.post('/auth/oauth/google', {
-          idToken: result.idToken,
-          accessToken: result.accessToken,
-        });
-
-        const data = response.data;
-        if (response.status === 200 && data.data?.accessToken) {
-          const { accessToken, refreshToken } = data.data;
-
-          await saveLoginSettings(accessToken, refreshToken);
-
-          dispatch(setTokens({
-            accessToken,
-            refreshToken,
-          }));
-
-          // 프로필 조회 후 역할에 따라 라우팅
-          const profile = await fetchAndSaveProfile(accessToken);
-          if (profile?.role === 'GYM') {
-            router.replace('/admin');
-          } else {
-            router.replace('/(tabs)');
-          }
-        } else {
-          Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
-        }
-      } catch (e: any) {
-        const message = e.response?.data?.message || t('validation.error');
-        Alert.alert(t('auth.loginFailed'), message);
-      }
-    } else if (result.error) {
-      Alert.alert(t('auth.loginFailed'), result.error);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('auth.login')}</Text>
+      <Text style={styles.title}>{t('auth.gymAdminLogin')}</Text>
+      <Text style={styles.subtitle}>{t('auth.gymAdminLoginDesc')}</Text>
+
       <TextInput
         style={styles.input}
-        placeholder={t('auth.email')}
+        placeholder={t('auth.boxId')}
         placeholderTextColor="#A3B18A"
-        value={email}
-        onChangeText={setEmail}
+        value={boxId}
+        onChangeText={setBoxId}
         autoCapitalize="none"
-        keyboardType="email-address"
       />
       <TextInput
         style={styles.input}
@@ -225,12 +175,12 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={styles.checkboxRow}
-          onPress={() => setRememberEmail(!rememberEmail)}
+          onPress={() => setRememberId(!rememberId)}
         >
-          <View style={[styles.checkbox, rememberEmail && styles.checkboxChecked]}>
-            {rememberEmail && <Text style={styles.checkmark}>✓</Text>}
+          <View style={[styles.checkbox, rememberId && styles.checkboxChecked]}>
+            {rememberId && <Text style={styles.checkmark}>✓</Text>}
           </View>
-          <Text style={styles.checkboxLabel}>{t('auth.rememberEmail')}</Text>
+          <Text style={styles.checkboxLabel}>{t('auth.rememberId')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -240,23 +190,12 @@ export default function LoginScreen() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.socialButton, styles.googleButton]}
-        onPress={handleGoogleLogin}
-        disabled={googleLoading || !googleReady}
-      >
-        <Text style={styles.googleIcon}>G</Text>
-        <Text style={styles.socialButtonText}>
-          {googleLoading ? t('auth.loggingIn') : t('auth.googleLogin')}
-        </Text>
+      <TouchableOpacity onPress={() => router.push('/register/crossfit-box-admin')} style={styles.linkBtn}>
+        <Text style={styles.link}>{t('auth.gymRegister')}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/register/member-admin')} style={styles.linkBtn}>
-        <Text style={styles.link}>{t('auth.goToRegister')}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.push('/login/gym-admin')} style={styles.gymAdminButton}>
-        <Text style={styles.gymAdminText}>{t('auth.gymAdminLogin')}</Text>
+      <TouchableOpacity onPress={() => router.replace('/login')} style={styles.linkBtn}>
+        <Text style={styles.backLink}>{t('auth.backToMemberLogin')}</Text>
       </TouchableOpacity>
     </View>
   );

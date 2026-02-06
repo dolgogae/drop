@@ -40,6 +40,13 @@ const translations: Record<string, string> = {
   'auth.kakaoLogin': '카카오로 로그인',
   'auth.autoLogin': '자동 로그인',
   'auth.rememberEmail': '아이디 기억하기',
+  'auth.boxId': '아이디',
+  'auth.rememberId': '아이디 기억하기',
+  'auth.gymAdminLogin': 'Gym Admin',
+  'auth.gymAdminLoginDesc': 'Box 운영자 전용 로그인',
+  'auth.gymAdminOnly': 'Box 운영자 계정만 로그인할 수 있습니다.',
+  'auth.gymRegister': 'Box 회원가입',
+  'auth.backToMemberLogin': '일반 회원 로그인으로 돌아가기',
 
   // Validation
   'validation.fillAll': '모든 항목을 입력해주세요.',

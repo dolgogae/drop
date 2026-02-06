@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
@@ -22,8 +21,7 @@ public class UserCreateDto {
     protected String username;
 
     @NotBlank
-    @Email(message = "Not Valid Email")
-    @Schema(description = "사용자 email", example = "abc@gmail.com")
+    @Schema(description = "사용자 아이디", example = "user123")
     protected String email;
 
     @NotBlank

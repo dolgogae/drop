@@ -421,6 +421,35 @@ export default function ScheduleManagement() {
     setSelectedSlots(new Set());
   };
 
+  // 다중 선택 모드 시작 (버튼으로)
+  const enterMultiSelectMode = () => {
+    // 일정이 있는지 확인
+    const hasSlots = schedules.some((s) => s.timeSlots.length > 0);
+    if (!hasSlots) {
+      Alert.alert('알림', '삭제할 일정이 없습니다.');
+      return;
+    }
+    setIsMultiSelectMode(true);
+    setSelectedSlots(new Set());
+  };
+
+  // 전체 선택
+  const handleSelectAll = () => {
+    const allSlotKeys = new Set<string>();
+    schedules.forEach((schedule) => {
+      schedule.timeSlots.forEach((slot) => {
+        allSlotKeys.add(`${schedule.dayOfWeek}-${slot.startTime}`);
+      });
+    });
+
+    // 이미 전체 선택 상태면 전체 해제
+    if (selectedSlots.size === allSlotKeys.size && allSlotKeys.size > 0) {
+      setSelectedSlots(new Set());
+    } else {
+      setSelectedSlots(allSlotKeys);
+    }
+  };
+
   // 선택된 일정 일괄 삭제
   const handleBatchDelete = () => {
     if (selectedSlots.size === 0) return;
@@ -559,6 +588,10 @@ export default function ScheduleManagement() {
               <Ionicons name="close" size={18} color="#666" />
               <Text style={styles.cancelSelectText}>취소</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.selectAllButton} onPress={handleSelectAll}>
+              <Ionicons name="checkbox-outline" size={16} color="#588157" />
+              <Text style={styles.selectAllText}>전체</Text>
+            </TouchableOpacity>
             <Text style={styles.selectedCountText}>{selectedSlots.size}개 선택됨</Text>
             <TouchableOpacity
               style={[styles.batchDeleteButton, selectedSlots.size === 0 && styles.batchDeleteButtonDisabled]}
@@ -570,15 +603,22 @@ export default function ScheduleManagement() {
             </TouchableOpacity>
           </>
         ) : (
-          <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-            <Ionicons name="trash-outline" size={16} color="#e63946" />
-            <Text style={styles.clearButtonText}>전체 삭제</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.multiSelectButton} onPress={enterMultiSelectMode}>
+              <Ionicons name="checkbox-outline" size={16} color="#588157" />
+              <Text style={styles.multiSelectText}>다중 선택</Text>
+            </TouchableOpacity>
+            <View style={styles.actionBarSpacer} />
+            <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
+              <Ionicons name="trash-outline" size={16} color="#e63946" />
+              <Text style={styles.clearButtonText}>전체 삭제</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
 
       {/* 선택 힌트 */}
-      {selectStart && (
+      {selectStart && !isMultiSelectMode && (
         <View style={styles.selectionHint}>
           <View style={styles.selectionHintContent}>
             <Ionicons name="time-outline" size={16} color="#588157" />
@@ -593,6 +633,16 @@ export default function ScheduleManagement() {
           >
             <Ionicons name="close-circle" size={20} color="#999" />
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 다중 선택 모드 힌트 */}
+      {isMultiSelectMode && (
+        <View style={styles.multiSelectHint}>
+          <Ionicons name="information-circle-outline" size={16} color="#457b9d" />
+          <Text style={styles.multiSelectHintText}>
+            삭제할 일정을 터치하여 선택하세요
+          </Text>
         </View>
       )}
 
@@ -827,7 +877,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  actionBarSpacer: {
+    flex: 1,
+  },
+  multiSelectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  multiSelectText: {
+    fontSize: 12,
+    color: '#588157',
+    fontWeight: '500',
   },
   clearButton: {
     flexDirection: 'row',
@@ -841,6 +908,21 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 12,
     color: '#e63946',
+    fontWeight: '500',
+  },
+  selectAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+    marginLeft: 8,
+  },
+  selectAllText: {
+    fontSize: 12,
+    color: '#588157',
     fontWeight: '500',
   },
   cancelSelectButton: {
@@ -905,6 +987,20 @@ const styles = StyleSheet.create({
   },
   selectionHintCancel: {
     padding: 4,
+  },
+  multiSelectHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#bbdefb',
+    gap: 8,
+  },
+  multiSelectHintText: {
+    fontSize: 13,
+    color: '#457b9d',
   },
   scrollView: {
     flex: 1,

@@ -43,12 +43,17 @@ const styles = StyleSheet.create({
   linkBtn: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 12,
   },
   link: {
-    color: '#1B4332',
-    fontSize: 16,
-    marginTop: 8,
-    textDecorationLine: 'underline',
+    color: '#588157',
+    fontSize: 15,
+    fontWeight: '500',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#f0f7f0',
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -121,6 +126,30 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 15,
     color: '#333',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  backLink: {
+    color: '#888',
+    fontSize: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  gymAdminButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+  },
+  gymAdminText: {
+    color: '#777',
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
 

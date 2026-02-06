@@ -43,13 +43,30 @@ interface BoxInfo {
 
 const formatPhoneNumber = (value: string): string => {
   const numbers = value.replace(/[^0-9]/g, '');
+
+  // 4자리 지역번호 (0504, 0505 등 인터넷 전화)
+  if (numbers.startsWith('050') && numbers.length > 3) {
+    if (numbers.length <= 4) return numbers;
+    if (numbers.length <= 8) return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
+    return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8, 12)}`;
+  }
+
+  // 2자리 지역번호 (02 서울)
+  if (numbers.startsWith('02')) {
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 5) return `${numbers.slice(0, 2)}-${numbers.slice(2)}`;
+    if (numbers.length <= 9) return `${numbers.slice(0, 2)}-${numbers.slice(2, 5)}-${numbers.slice(5)}`;
+    return `${numbers.slice(0, 2)}-${numbers.slice(2, 6)}-${numbers.slice(6, 10)}`;
+  }
+
+  // 3자리 지역번호 (010, 031, 070 등)
   if (numbers.length <= 3) return numbers;
   if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
   return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
 };
 
 const isValidPhoneNumber = (phone: string): boolean => {
-  const pattern = /^0\d{2}-\d{3,4}-\d{4}$/;
+  const pattern = /^0\d{1,3}-\d{3,4}-\d{4}$/;
   return pattern.test(phone);
 };
 
@@ -299,7 +316,7 @@ export default function EditBoxScreen() {
             value={phoneNumber}
             onChangeText={handlePhoneNumberChange}
             keyboardType="phone-pad"
-            maxLength={13}
+            maxLength={14}
           />
           {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
 
