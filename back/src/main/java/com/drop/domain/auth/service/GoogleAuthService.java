@@ -72,6 +72,7 @@ public class GoogleAuthService {
         return TokenDto.builder()
                 .accessToken(jwtTokenDto.getAccessToken())
                 .refreshToken(jwtTokenDto.getRefreshToken())
+                .role(member.getRole().name())
                 .build();
     }
 

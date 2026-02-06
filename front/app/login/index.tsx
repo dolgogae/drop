@@ -68,14 +68,14 @@ export default function LoginScreen() {
     return null;
   };
 
-  const saveLoginSettings = async (accessToken: string, refreshToken: string) => {
+  const saveLoginSettings = async (accessToken: string, refreshToken: string, role: string) => {
     try {
       const promises: Promise<void>[] = [];
 
       // 자동 로그인이 체크된 경우 토큰 저장
       if (autoLogin) {
         promises.push(
-          AsyncStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify({ accessToken, refreshToken })),
+          AsyncStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify({ accessToken, refreshToken, role })),
           AsyncStorage.setItem(AUTO_LOGIN_KEY, 'true')
         );
       } else {
@@ -114,18 +114,21 @@ export default function LoginScreen() {
       const response = await axiosInstance.post('/auth/login', { email, password });
       const data = response.data;
       if (response.status === 200 && data.data?.accessToken) {
-        const { accessToken, refreshToken } = data.data;
+        const { accessToken, refreshToken, role } = data.data;
 
-        await saveLoginSettings(accessToken, refreshToken);
+        await saveLoginSettings(accessToken, refreshToken, role);
 
         dispatch(setTokens({
           accessToken,
           refreshToken,
+          role,
         }));
 
-        // 프로필 조회 후 역할에 따라 라우팅
-        const profile = await fetchAndSaveProfile(accessToken);
-        if (profile?.role === 'GYM') {
+        // 백그라운드로 프로필 캐싱 (라우팅과 무관)
+        fetchAndSaveProfile(accessToken);
+
+        // 응답의 role로 즉시 라우팅
+        if (role === 'GYM') {
           router.replace('/admin');
         } else {
           router.replace('/(tabs)');
@@ -163,18 +166,21 @@ export default function LoginScreen() {
 
         const data = response.data;
         if (response.status === 200 && data.data?.accessToken) {
-          const { accessToken, refreshToken } = data.data;
+          const { accessToken, refreshToken, role } = data.data;
 
-          await saveLoginSettings(accessToken, refreshToken);
+          await saveLoginSettings(accessToken, refreshToken, role);
 
           dispatch(setTokens({
             accessToken,
             refreshToken,
+            role,
           }));
 
-          // 프로필 조회 후 역할에 따라 라우팅
-          const profile = await fetchAndSaveProfile(accessToken);
-          if (profile?.role === 'GYM') {
+          // 백그라운드로 프로필 캐싱 (라우팅과 무관)
+          fetchAndSaveProfile(accessToken);
+
+          // 응답의 role로 즉시 라우팅
+          if (role === 'GYM') {
             router.replace('/admin');
           } else {
             router.replace('/(tabs)');
