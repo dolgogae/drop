@@ -20,7 +20,7 @@ public class CrossfitBoxDto extends UserDto {
     private AddressDto address;
     private Double latitude;
     private Double longitude;
-    private CrossfitBoxUsageInfoDto usageInfoDto;
+    private CrossfitBoxUsageInfoDto usageInfo;
 
 
     @Getter

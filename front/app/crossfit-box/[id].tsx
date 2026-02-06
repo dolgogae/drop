@@ -36,7 +36,7 @@ interface CrossfitBoxDetail {
   address?: Address;
   latitude?: number;
   longitude?: number;
-  usageInfoDto?: CrossfitBoxUsageInfo;
+  usageInfo?: CrossfitBoxUsageInfo;
 }
 
 interface TimeSlot {
@@ -379,45 +379,45 @@ export default function CrossfitBoxDetailScreen() {
         </View>
 
         {/* 이용 정보 */}
-        {crossfitBox.usageInfoDto && (
+        {crossfitBox.usageInfo && (
           <View style={styles.usageCard}>
             <Text style={styles.sectionTitle}>편의시설</Text>
             <View style={styles.usageGrid}>
               <View style={styles.usageItem}>
-                <View style={[styles.usageIcon, crossfitBox.usageInfoDto.parking && styles.usageIconActive]}>
+                <View style={[styles.usageIcon, crossfitBox.usageInfo.parking && styles.usageIconActive]}>
                   <Ionicons
                     name="car-outline"
                     size={24}
-                    color={crossfitBox.usageInfoDto.parking ? '#fff' : '#A3B18A'}
+                    color={crossfitBox.usageInfo.parking ? '#fff' : '#A3B18A'}
                   />
                 </View>
-                <Text style={[styles.usageLabel, crossfitBox.usageInfoDto.parking && styles.usageLabelActive]}>
+                <Text style={[styles.usageLabel, crossfitBox.usageInfo.parking && styles.usageLabelActive]}>
                   주차
                 </Text>
               </View>
 
               <View style={styles.usageItem}>
-                <View style={[styles.usageIcon, crossfitBox.usageInfoDto.wear && styles.usageIconActive]}>
+                <View style={[styles.usageIcon, crossfitBox.usageInfo.wear && styles.usageIconActive]}>
                   <Ionicons
                     name="shirt-outline"
                     size={24}
-                    color={crossfitBox.usageInfoDto.wear ? '#fff' : '#A3B18A'}
+                    color={crossfitBox.usageInfo.wear ? '#fff' : '#A3B18A'}
                   />
                 </View>
-                <Text style={[styles.usageLabel, crossfitBox.usageInfoDto.wear && styles.usageLabelActive]}>
+                <Text style={[styles.usageLabel, crossfitBox.usageInfo.wear && styles.usageLabelActive]}>
                   운동복
                 </Text>
               </View>
 
               <View style={styles.usageItem}>
-                <View style={[styles.usageIcon, crossfitBox.usageInfoDto.locker && styles.usageIconActive]}>
+                <View style={[styles.usageIcon, crossfitBox.usageInfo.locker && styles.usageIconActive]}>
                   <Ionicons
                     name="lock-closed-outline"
                     size={24}
-                    color={crossfitBox.usageInfoDto.locker ? '#fff' : '#A3B18A'}
+                    color={crossfitBox.usageInfo.locker ? '#fff' : '#A3B18A'}
                   />
                 </View>
-                <Text style={[styles.usageLabel, crossfitBox.usageInfoDto.locker && styles.usageLabelActive]}>
+                <Text style={[styles.usageLabel, crossfitBox.usageInfo.locker && styles.usageLabelActive]}>
                   락커
                 </Text>
               </View>
