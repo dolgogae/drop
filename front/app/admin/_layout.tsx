@@ -11,6 +11,7 @@ export default function AdminLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="schedule/index" />
       <Stack.Screen name="edit-box/index" />
+      <Stack.Screen name="reviews/index" />
     </Stack>
   );
 }

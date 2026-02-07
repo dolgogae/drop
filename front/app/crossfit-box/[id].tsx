@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -91,6 +91,7 @@ export default function CrossfitBoxDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSettingHomeBox, setIsSettingHomeBox] = useState(false);
   const [currentHomeBoxId, setCurrentHomeBoxId] = useState<number | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<{ averageRating: number; reviewCount: number } | null>(null);
 
   // 토스트 상태
   const [toast, setToast] = useState<{ visible: boolean; message: string; time: string; color: string; x: number; y: number }>({
@@ -135,6 +136,16 @@ export default function CrossfitBoxDetailScreen() {
     }, 2000);
   };
 
+  const fetchReviewSummary = async () => {
+    try {
+      const response = await axiosInstance.get(`/crossfit-boxes/${id}/reviews`);
+      const data = response.data.data;
+      setReviewSummary({ averageRating: data.averageRating, reviewCount: data.reviewCount });
+    } catch (err) {
+      console.error('리뷰 요약 조회 실패:', err);
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchCrossfitBoxDetail();
@@ -142,6 +153,12 @@ export default function CrossfitBoxDetailScreen() {
       fetchCurrentHomeBox();
     }
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) fetchReviewSummary();
+    }, [id])
+  );
 
   const fetchCurrentHomeBox = async () => {
     try {
@@ -320,6 +337,25 @@ export default function CrossfitBoxDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* 리뷰 */}
+        <TouchableOpacity
+          style={styles.reviewButton}
+          onPress={() => router.push({ pathname: '/crossfit-box/reviews', params: { id } })}
+        >
+          <View style={styles.infoIcon}>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color="#588157" />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoValue}>리뷰</Text>
+            {reviewSummary && reviewSummary.reviewCount > 0 && (
+              <Text style={styles.infoLabel}>
+                <Ionicons name="star" size={12} color="#FFB800" /> {reviewSummary.averageRating.toFixed(1)} ({reviewSummary.reviewCount})
+              </Text>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#A3B18A" />
+        </TouchableOpacity>
 
         {/* 기본 정보 */}
         <View style={styles.infoCard}>
@@ -766,6 +802,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#344E41',
     fontWeight: '500',
+  },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   usageCard: {
     backgroundColor: '#fff',

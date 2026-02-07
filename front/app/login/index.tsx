@@ -118,20 +118,21 @@ export default function LoginScreen() {
 
         await saveLoginSettings(accessToken, refreshToken, role);
 
+        // GYM은 프로필 캐싱 완료 후 토큰 dispatch (admin에서 boxName 필요)
+        if (role === 'GYM') {
+          await fetchAndSaveProfile(accessToken);
+        }
+
+        // dispatch 후 _layout.tsx가 role 기반으로 자동 라우팅
         dispatch(setTokens({
           accessToken,
           refreshToken,
           role,
         }));
 
-        // 백그라운드로 프로필 캐싱 (라우팅과 무관)
-        fetchAndSaveProfile(accessToken);
-
-        // 응답의 role로 즉시 라우팅
-        if (role === 'GYM') {
-          router.replace('/admin');
-        } else {
-          router.replace('/(tabs)');
+        // MEMBER만 백그라운드 프로필 캐싱
+        if (role !== 'GYM') {
+          fetchAndSaveProfile(accessToken);
         }
       } else {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
@@ -170,20 +171,18 @@ export default function LoginScreen() {
 
           await saveLoginSettings(accessToken, refreshToken, role);
 
+          if (role === 'GYM') {
+            await fetchAndSaveProfile(accessToken);
+          }
+
           dispatch(setTokens({
             accessToken,
             refreshToken,
             role,
           }));
 
-          // 백그라운드로 프로필 캐싱 (라우팅과 무관)
-          fetchAndSaveProfile(accessToken);
-
-          // 응답의 role로 즉시 라우팅
-          if (role === 'GYM') {
-            router.replace('/admin');
-          } else {
-            router.replace('/(tabs)');
+          if (role !== 'GYM') {
+            fetchAndSaveProfile(accessToken);
           }
         } else {
           Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
@@ -257,13 +256,10 @@ export default function LoginScreen() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/register/member-admin')} style={styles.linkBtn}>
-        <Text style={styles.link}>{t('auth.goToRegister')}</Text>
+      <TouchableOpacity onPress={() => router.push('/register/member-admin')} style={styles.registerButton}>
+        <Text style={styles.registerButtonText}>{t('auth.goToRegister')}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/login/gym-admin')} style={styles.gymAdminButton}>
-        <Text style={styles.gymAdminText}>{t('auth.gymAdminLogin')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
