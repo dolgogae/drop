@@ -43,9 +43,9 @@ const translations: Record<string, string> = {
   'auth.boxId': '아이디',
   'auth.rememberId': '아이디 기억하기',
   'auth.gymAdminLogin': 'Gym Admin',
-  'auth.gymAdminLoginDesc': 'Box 운영자 전용 로그인',
-  'auth.gymAdminOnly': 'Box 운영자 계정만 로그인할 수 있습니다.',
-  'auth.gymRegister': 'Box 회원가입',
+  'auth.gymAdminLoginDesc': '박스 운영자 전용 로그인',
+  'auth.gymAdminOnly': '박스 운영자 계정만 로그인할 수 있습니다.',
+  'auth.gymRegister': '박스 회원가입',
   'auth.backToMemberLogin': '일반 회원 로그인으로 돌아가기',
 
   // Validation
@@ -63,8 +63,8 @@ const translations: Record<string, string> = {
   'role.title': '회원 유형 선택',
   'role.member': '일반 회원',
   'role.memberDesc': '트레이닝을 받고 싶은 회원',
-  'role.crossfitBox': 'Box',
-  'role.crossfitBoxDesc': 'Box 운영자',
+  'role.crossfitBox': '박스',
+  'role.crossfitBoxDesc': '박스 운영자',
 
   // Basic Info
   'info.basic': '기본 정보',
@@ -75,10 +75,10 @@ const translations: Record<string, string> = {
   'member.additionalInfo': '추가 정보',
 
   // CrossfitBox
-  'crossfitBox.title': 'Box 가입',
-  'crossfitBox.editTitle': 'Box 정보 수정',
-  'crossfitBox.info': 'Box 정보',
-  'crossfitBox.name': 'Box 이름',
+  'crossfitBox.title': '박스 가입',
+  'crossfitBox.editTitle': '박스 정보 수정',
+  'crossfitBox.info': '박스 정보',
+  'crossfitBox.name': '박스 이름',
   'crossfitBox.phoneNumber': '전화번호',
   'crossfitBox.etcInfo': '기타 정보',
   'crossfitBox.etcInfoPlaceholder': '가까운 역, 버스 정류장 등',
@@ -88,7 +88,7 @@ const translations: Record<string, string> = {
   'crossfitBox.locker': '락커 제공',
   'crossfitBox.dropInFee': '드랍인 비용',
   'crossfitBox.dropInFeePlaceholder': '30000',
-  'crossfitBox.requiredFields': 'Box 이름, 주소, 전화번호는 필수입니다.',
+  'crossfitBox.requiredFields': '박스 이름, 주소, 전화번호는 필수입니다.',
 
   // Address
   'address.title': '주소',

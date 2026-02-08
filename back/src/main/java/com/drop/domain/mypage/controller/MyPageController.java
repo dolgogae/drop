@@ -5,6 +5,8 @@ import com.drop.domain.mypage.dto.NotificationSettingDto;
 import com.drop.domain.mypage.dto.PasswordChangeRequestDto;
 import com.drop.domain.mypage.dto.ProfileUpdateRequestDto;
 import com.drop.domain.mypage.service.MyPageService;
+import com.drop.domain.review.dto.MyReviewListResponseDto;
+import com.drop.domain.review.service.ReviewService;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
 import com.drop.global.security.CustomUserDetails;
@@ -29,6 +31,7 @@ import javax.validation.Valid;
 public class MyPageController {
 
     private final MyPageService myPageService;
+    private final ReviewService reviewService;
 
     @Operation(summary = "내 프로필 조회", description = "로그인한 사용자의 프로필 정보를 조회합니다.")
     @GetMapping("/profile")
@@ -47,6 +50,17 @@ public class MyPageController {
     ) {
         myPageService.updateProfile(userDetails.getId(), dto);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.PROFILE_UPDATE_SUCCESS, null));
+    }
+
+    @Operation(summary = "내 리뷰 목록 조회", description = "로그인한 사용자가 작성한 리뷰 목록을 조회합니다.")
+    @GetMapping("/reviews")
+    public ResponseEntity<ResultResponse> getMyReviews(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        MyReviewListResponseDto reviews = reviewService.getMyReviews(userDetails.getId(), page, size);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.MY_REVIEW_LIST_SUCCESS, reviews));
     }
 
     @Operation(summary = "비밀번호 변경", description = "비밀번호를 변경합니다.")

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import axiosInstance from '../../utils/axiosInstance';
+import { saveRecentlyViewedBox } from '../../utils/recentStorage';
 
 interface CrossfitBoxUsageInfo {
   parking: boolean;
@@ -91,6 +92,7 @@ export default function CrossfitBoxDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSettingHomeBox, setIsSettingHomeBox] = useState(false);
   const [currentHomeBoxId, setCurrentHomeBoxId] = useState<number | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<{ averageRating: number; reviewCount: number } | null>(null);
 
   // 토스트 상태
   const [toast, setToast] = useState<{ visible: boolean; message: string; time: string; color: string; x: number; y: number }>({
@@ -135,6 +137,16 @@ export default function CrossfitBoxDetailScreen() {
     }, 2000);
   };
 
+  const fetchReviewSummary = async () => {
+    try {
+      const response = await axiosInstance.get(`/crossfit-boxes/${id}/reviews`);
+      const data = response.data.data;
+      setReviewSummary({ averageRating: data.averageRating, reviewCount: data.reviewCount });
+    } catch (err) {
+      console.error('리뷰 요약 조회 실패:', err);
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchCrossfitBoxDetail();
@@ -142,6 +154,12 @@ export default function CrossfitBoxDetailScreen() {
       fetchCurrentHomeBox();
     }
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) fetchReviewSummary();
+    }, [id])
+  );
 
   const fetchCurrentHomeBox = async () => {
     try {
@@ -158,11 +176,13 @@ export default function CrossfitBoxDetailScreen() {
       setError(null);
       const response = await axiosInstance.get(`/crossfit-boxes/${id}`);
       if (response.data?.data) {
-        setCrossfitBox(response.data.data);
+        const data = response.data.data;
+        setCrossfitBox(data);
+        saveRecentlyViewedBox(data.id, data.name);
       }
     } catch (err: any) {
       console.error('크로스핏박스 상세 조회 실패:', err);
-      setError('Box 정보를 불러올 수 없습니다.');
+      setError('박스 정보를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
     }
@@ -221,15 +241,15 @@ export default function CrossfitBoxDetailScreen() {
       if (isCurrentHomeBox) {
         await axiosInstance.delete('/mypage/home-box');
         setCurrentHomeBoxId(null);
-        Alert.alert('My Box 해제', `${crossfitBox.name}이(가) My Box에서 해제되었습니다.`);
+        Alert.alert('나의 박스 해제', `${crossfitBox.name}이(가) 나의 박스에서 해제되었습니다.`);
       } else {
         await axiosInstance.patch(`/mypage/home-box/${crossfitBox.id}`);
         setCurrentHomeBoxId(crossfitBox.id);
-        Alert.alert('My Box 설정', `${crossfitBox.name}이(가) My Box로 설정되었습니다.`);
+        Alert.alert('나의 박스 설정', `${crossfitBox.name}이(가) 나의 박스로 설정되었습니다.`);
       }
     } catch (err: any) {
       console.error('My Box 변경 실패:', err);
-      Alert.alert('오류', 'My Box 변경에 실패했습니다.');
+      Alert.alert('오류', '나의 박스 변경에 실패했습니다.');
     } finally {
       setIsSettingHomeBox(false);
     }
@@ -251,7 +271,7 @@ export default function CrossfitBoxDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#344E41" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Box 정보</Text>
+          <Text style={styles.headerTitle}>박스 정보</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
@@ -269,12 +289,12 @@ export default function CrossfitBoxDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#344E41" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Box 정보</Text>
+          <Text style={styles.headerTitle}>박스 정보</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#A3B18A" />
-          <Text style={styles.errorText}>{error || 'Box를 찾을 수 없습니다.'}</Text>
+          <Text style={styles.errorText}>{error || '박스를 찾을 수 없습니다.'}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchCrossfitBoxDetail}>
             <Text style={styles.retryButtonText}>다시 시도</Text>
           </TouchableOpacity>
@@ -291,7 +311,7 @@ export default function CrossfitBoxDetailScreen() {
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="#344E41" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Box 정보</Text>
+        <Text style={styles.headerTitle}>박스 정보</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -314,12 +334,31 @@ export default function CrossfitBoxDetailScreen() {
                   color={isCurrentHomeBox ? '#fff' : '#588157'}
                 />
                 <Text style={[styles.homeBoxButtonText, isCurrentHomeBox && styles.homeBoxButtonTextActive]}>
-                  {isCurrentHomeBox ? 'My Box 해제' : 'My Box로 설정'}
+                  {isCurrentHomeBox ? '나의 박스 해제' : '나의 박스로 설정'}
                 </Text>
               </>
             )}
           </TouchableOpacity>
         </View>
+
+        {/* 리뷰 */}
+        <TouchableOpacity
+          style={styles.reviewButton}
+          onPress={() => router.push({ pathname: '/crossfit-box/reviews', params: { id } })}
+        >
+          <View style={styles.infoIcon}>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color="#588157" />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoValue}>리뷰</Text>
+            {reviewSummary && reviewSummary.reviewCount > 0 && (
+              <Text style={styles.infoLabel}>
+                <Ionicons name="star" size={12} color="#FFB800" /> {reviewSummary.averageRating.toFixed(1)} ({reviewSummary.reviewCount})
+              </Text>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#A3B18A" />
+        </TouchableOpacity>
 
         {/* 기본 정보 */}
         <View style={styles.infoCard}>
@@ -766,6 +805,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#344E41',
     fontWeight: '500',
+  },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   usageCard: {
     backgroundColor: '#fff',

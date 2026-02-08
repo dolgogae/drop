@@ -139,6 +139,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
+  registerButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A3B18A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  registerButtonText: {
+    color: '#1B4332',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   gymAdminButton: {
     marginTop: 20,
     paddingVertical: 10,

@@ -118,12 +118,12 @@ export default function GymAdminLoginScreen() {
 
         await saveLoginSettings(accessToken, refreshToken);
 
+        // dispatch 후 _layout.tsx가 role 기반으로 자동 라우팅
         dispatch(setTokens({
           accessToken,
           refreshToken,
+          role: 'GYM',
         }));
-
-        router.replace('/admin');
       } else {
         Alert.alert(t('auth.loginFailed'), data.message || t('validation.error'));
       }
@@ -190,13 +190,10 @@ export default function GymAdminLoginScreen() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/register/crossfit-box-admin')} style={styles.linkBtn}>
-        <Text style={styles.link}>{t('auth.gymRegister')}</Text>
+      <TouchableOpacity onPress={() => router.push('/register/crossfit-box-admin')} style={styles.registerButton}>
+        <Text style={styles.registerButtonText}>{t('auth.gymRegister')}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.replace('/login')} style={styles.linkBtn}>
-        <Text style={styles.backLink}>{t('auth.backToMemberLogin')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }

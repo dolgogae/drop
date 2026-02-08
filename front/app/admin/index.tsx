@@ -37,6 +37,13 @@ const menuItems: MenuItem[] = [
     icon: 'calendar-outline',
     route: '/admin/schedule',
   },
+  {
+    id: 'reviews',
+    title: '리뷰 관리',
+    description: '회원들이 작성한 리뷰를 확인합니다',
+    icon: 'chatbubble-ellipses-outline',
+    route: '/admin/reviews',
+  },
 ];
 
 const AUTH_TOKENS_KEY = 'auth_tokens';
@@ -57,7 +64,7 @@ export default function AdminDashboard() {
       const profileStr = await AsyncStorage.getItem('profile');
       if (profileStr) {
         const profile = JSON.parse(profileStr);
-        setBoxName(profile.name || 'Box');
+        setBoxName(profile.username || profile.name || 'Box');
       }
     } catch (error) {
       console.error('프로필 로드 실패:', error);

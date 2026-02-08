@@ -19,6 +19,7 @@ import {
 import { HomeState, LocationMode } from '../../constants/enums';
 import axiosInstance from '../../utils/axiosInstance';
 import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
+import { getRecentlyViewedBoxes, RecentBox } from '../../utils/recentStorage';
 
 interface MyCrossfitBoxPreview {
   crossfitBoxId: number;
@@ -42,6 +43,16 @@ interface HomeSummary {
   hasMoreMyCrossfitBoxes: boolean;
 }
 
+interface MyReview {
+  reviewId: number;
+  rating: number;
+  content: string;
+  crossfitBoxId: number;
+  crossfitBoxName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const snapToGrid = (value: number, gridSize: number = 0.005): number => {
   return Math.round(value / gridSize) * gridSize;
 };
@@ -54,6 +65,8 @@ export default function HomeScreen() {
   const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [myReviews, setMyReviews] = useState<MyReview[]>([]);
+  const [recentlyViewedBoxes, setRecentlyViewedBoxes] = useState<RecentBox[]>([]);
 
   const checkLocationPermission = useCallback(async () => {
     try {
@@ -152,6 +165,22 @@ export default function HomeScreen() {
     }
   }, [currentLocation]);
 
+  const fetchMyReviews = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/mypage/reviews', { params: { page: 0, size: 3 } });
+      if (response.data?.data?.reviews) {
+        setMyReviews(response.data.data.reviews);
+      }
+    } catch (error) {
+      console.error('내 리뷰 조회 실패:', error);
+    }
+  }, []);
+
+  const loadRecentlyViewedBoxes = useCallback(async () => {
+    const boxes = await getRecentlyViewedBoxes();
+    setRecentlyViewedBoxes(boxes);
+  }, []);
+
   const isInitialMount = useRef(true);
 
   useEffect(() => {
@@ -173,6 +202,9 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      fetchMyReviews();
+      loadRecentlyViewedBoxes();
+
       if (isInitialMount.current) {
         isInitialMount.current = false;
         return;
@@ -369,21 +401,20 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* 스켈레톤: 근처 요약 카드 */}
+          {/* 스켈레톤: 주변 박스 */}
           <View style={[styles.summaryCard, styles.skeleton]}>
-            <View style={[styles.skeletonText, { width: '60%', height: 28 }]} />
-            <View style={[styles.skeletonText, { width: '40%', height: 14, marginTop: 8 }]} />
-            <View style={[styles.skeletonButton, { marginTop: 20 }]} />
+            <View style={[styles.skeletonText, { width: '50%', height: 20 }]} />
+            <View style={[styles.skeletonButton, { marginTop: 10 }]} />
           </View>
 
-          {/* 스켈레톤: 내 크로스핏박스 미리보기 */}
-          <View style={styles.sectionHeader}>
-            <View style={[styles.skeletonText, { width: 100, height: 18 }]} />
+          {/* 스켈레톤: 즐겨찾기 */}
+          <View style={[styles.sectionHeader, { marginTop: 18 }]}>
+            <View style={[styles.skeletonText, { width: 80, height: 16 }]} />
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.crossfitBoxPreviewScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
             {[1, 2, 3].map((i) => (
-              <View key={i} style={[styles.crossfitBoxPreviewCard, styles.skeleton]}>
-                <View style={[styles.skeletonText, { width: '70%', height: 16 }]} />
+              <View key={i} style={[styles.boxChip, styles.skeleton]}>
+                <View style={[styles.skeletonText, { width: '70%', height: 14 }]} />
               </View>
             ))}
           </ScrollView>
@@ -401,7 +432,7 @@ export default function HomeScreen() {
             <Ionicons name="location-outline" size={48} color="#588157" />
             <Text style={styles.permissionTitle}>위치 권한이 필요해요</Text>
             <Text style={styles.permissionDescription}>
-              근처 Box를 찾으려면 위치 권한이 필요합니다.
+              근처 박스를 찾으려면 위치 권한이 필요합니다.
               {'\n'}권한을 허용하시거나 주소로 검색해보세요.
             </Text>
 
@@ -457,168 +488,171 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* 1. My Box 섹션 (가로 꽉 차게) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Box</Text>
-          {summary?.homeBox && (
-            <TouchableOpacity onPress={() => router.push('/my-box/select' as any)}>
-              <Text style={styles.moreButton}>변경</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {summary?.homeBox ? (
-          <TouchableOpacity
-            style={styles.homeBoxCard}
-            onPress={handleHomeBoxPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.homeBoxContent}>
-              <Ionicons name="home" size={24} color="#588157" />
-              <View style={styles.homeBoxInfo}>
-                <Text style={styles.homeBoxName}>{summary.homeBox.name}</Text>
-                {summary.homeBox.addressLine1 && (
-                  <Text style={styles.homeBoxAddress} numberOfLines={1}>
-                    {summary.homeBox.addressLine1}
-                  </Text>
-                )}
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.homeBoxEmptyCard}
-            onPress={() => router.push('/my-box/select' as any)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="home-outline" size={32} color="#A3B18A" />
-            <Text style={styles.homeBoxEmptyText}>My Box를 설정해보세요</Text>
-            <Text style={styles.homeBoxEmptySubText}>자주 가는 박스를 My Box로 설정하면 빠르게 확인할 수 있어요</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* 2. 즐겨찾기 섹션 */}
-        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-          <Text style={styles.sectionTitle}>즐겨찾기</Text>
-          {(summary?.hasMoreMyCrossfitBoxes || (summary?.myCrossfitBoxesPreview && summary.myCrossfitBoxesPreview.length > 0)) && (
-            <TouchableOpacity onPress={handleGoToMyCrossfitBoxes}>
-              <Text style={styles.moreButton}>더보기</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {isMyCrossfitBoxesEmpty ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="star-outline" size={48} color="#A3B18A" />
-            <Text style={styles.emptyText}>아직 등록된 Box가 없어요</Text>
-            <TouchableOpacity style={styles.emptyRegisterButton} onPress={handleGoToMap}>
-              <Ionicons name="map-outline" size={20} color="#fff" />
-              <Text style={styles.emptyRegisterButtonText}>지도에서 추가하기</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.crossfitBoxPreviewScroll}
-            contentContainerStyle={styles.crossfitBoxPreviewScrollContent}
-          >
-            {summary?.myCrossfitBoxesPreview.map((crossfitBox) => (
-              <TouchableOpacity
-                key={crossfitBox.crossfitBoxId}
-                style={[
-                  styles.crossfitBoxPreviewCard,
-                  crossfitBox.isDeleted && styles.crossfitBoxPreviewCardDeleted,
-                ]}
-                onPress={() => handleCrossfitBoxPress(crossfitBox)}
-                activeOpacity={crossfitBox.isDeleted ? 1 : 0.7}
-              >
-                {!crossfitBox.isDeleted && (
-                  <TouchableOpacity
-                    style={styles.favoriteButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(crossfitBox.crossfitBoxId);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    disabled={crossfitBox.togglingFavorite}
-                  >
-                    {crossfitBox.togglingFavorite ? (
-                      <ActivityIndicator size="small" color="#FFD700" />
-                    ) : (
-                      <Ionicons
-                        name={crossfitBox.isFavorite ? 'star' : 'star-outline'}
-                        size={18}
-                        color={crossfitBox.isFavorite ? '#FFD700' : '#ccc'}
-                      />
-                    )}
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleRemoveCrossfitBox(crossfitBox.crossfitBoxId);
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name="close" size={16} color="#999" />
-                </TouchableOpacity>
-
-                <View style={styles.crossfitBoxPreviewContent}>
-                  {crossfitBox.isDeleted && (
-                    <Ionicons
-                      name="alert-circle"
-                      size={16}
-                      color="#e63946"
-                      style={styles.deletedIcon}
-                    />
-                  )}
-                  <Text
-                    style={[
-                      styles.crossfitBoxPreviewName,
-                      crossfitBox.isDeleted && styles.crossfitBoxPreviewNameDeleted,
-                    ]}
-                    numberOfLines={2}
-                  >
-                    {crossfitBox.isDeleted ? '없어진 Box' : crossfitBox.name}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* 3. 주변 박스 섹션 */}
-        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-          <Text style={styles.sectionTitle}>주변 박스</Text>
-        </View>
+        {/* 1. 주변 박스 */}
         <View style={styles.nearbyCard}>
           <TouchableOpacity
+            style={styles.nearbyRow}
             onPress={handleGoToNearbyCrossfitBoxes}
             activeOpacity={0.7}
-            accessibilityLabel={`근처 Box ${summary?.nearbyCrossfitBoxCount || 0}개`}
-            accessibilityRole="button"
             disabled={!currentLocation}
-            style={styles.nearbyContent}
           >
-            <View style={styles.nearbyLeft}>
-              <Ionicons name="location" size={24} color="#588157" />
-              <View style={styles.nearbyInfo}>
-                <Text style={styles.nearbyTitle}>
-                  근처 Box <Text style={styles.nearbyCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
-                </Text>
-                {currentAddress && (
-                  <Text style={styles.nearbyAddress}>{currentAddress}</Text>
+            <Ionicons name="location" size={20} color="#588157" />
+            <Text style={styles.nearbyText}>
+              근처 박스 <Text style={styles.nearbyCount}>{summary?.nearbyCrossfitBoxCount || 0}</Text>개
+            </Text>
+            {currentAddress && <Text style={styles.nearbyAddress} numberOfLines={1}>{currentAddress}</Text>}
+            <Ionicons name="chevron-forward" size={18} color="#999" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap} activeOpacity={0.7}>
+            <Ionicons name="map-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
+            <Text style={styles.mapButtonText}>지도에서 보기</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 2. My Box */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            {summary?.homeBox && (
+              <TouchableOpacity onPress={() => router.push('/my-box/select' as any)}>
+                <Text style={styles.moreButton}>변경</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {summary?.homeBox ? (
+            <TouchableOpacity style={styles.rowCard} onPress={handleHomeBoxPress} activeOpacity={0.7}>
+              <Ionicons name="home" size={20} color="#588157" />
+              <View style={styles.rowCardInfo}>
+                <Text style={styles.rowCardTitle} numberOfLines={1}>{summary.homeBox.name}</Text>
+                {summary.homeBox.addressLine1 && (
+                  <Text style={styles.rowCardSub} numberOfLines={1}>{summary.homeBox.addressLine1}</Text>
                 )}
               </View>
+              <Ionicons name="chevron-forward" size={18} color="#999" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.emptyCard} onPress={() => router.push('/my-box/select' as any)} activeOpacity={0.7}>
+              <Ionicons name="home-outline" size={24} color="#A3B18A" />
+              <View style={styles.emptyCardTextWrap}>
+                <Text style={styles.emptyCardTitle}>나의 박스를 설정해보세요</Text>
+                <Text style={styles.emptyCardSub}>자주 가는 박스를 빠르게 확인</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* 3. 즐겨찾기 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>즐겨찾기</Text>
+            {(summary?.hasMoreMyCrossfitBoxes || (summary?.myCrossfitBoxesPreview && summary.myCrossfitBoxesPreview.length > 0)) && (
+              <TouchableOpacity onPress={handleGoToMyCrossfitBoxes}>
+                <Text style={styles.moreButton}>더보기</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {isMyCrossfitBoxesEmpty ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="star-outline" size={36} color="#A3B18A" />
+              <Text style={styles.emptyText}>아직 등록된 박스가 없어요</Text>
+              <TouchableOpacity style={styles.emptyActionButton} onPress={handleGoToMap}>
+                <Ionicons name="map-outline" size={16} color="#fff" />
+                <Text style={styles.emptyActionButtonText}>지도에서 추가</Text>
+              </TouchableOpacity>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.mapButton} onPress={handleGoToMap}>
-            <Ionicons name="map-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-            <Text style={styles.mapButtonText}>지도에서 보기</Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
+              {summary?.myCrossfitBoxesPreview.map((crossfitBox) => (
+                <TouchableOpacity
+                  key={crossfitBox.crossfitBoxId}
+                  style={[styles.boxChip, crossfitBox.isDeleted && styles.boxChipDeleted]}
+                  onPress={() => handleCrossfitBoxPress(crossfitBox)}
+                  activeOpacity={crossfitBox.isDeleted ? 1 : 0.7}
+                >
+                  {!crossfitBox.isDeleted && (
+                    <TouchableOpacity
+                      style={styles.chipFavButton}
+                      onPress={(e) => { e.stopPropagation(); handleToggleFavorite(crossfitBox.crossfitBoxId); }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      disabled={crossfitBox.togglingFavorite}
+                    >
+                      {crossfitBox.togglingFavorite ? (
+                        <ActivityIndicator size="small" color="#FFD700" />
+                      ) : (
+                        <Ionicons
+                          name={crossfitBox.isFavorite ? 'star' : 'star-outline'}
+                          size={14}
+                          color={crossfitBox.isFavorite ? '#FFD700' : '#ccc'}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.chipRemoveButton}
+                    onPress={(e) => { e.stopPropagation(); handleRemoveCrossfitBox(crossfitBox.crossfitBoxId); }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close" size={12} color="#999" />
+                  </TouchableOpacity>
+                  <View style={styles.chipContent}>
+                    {crossfitBox.isDeleted && <Ionicons name="alert-circle" size={14} color="#e63946" style={{ marginRight: 2 }} />}
+                    <Text
+                      style={[styles.chipName, crossfitBox.isDeleted && styles.chipNameDeleted]}
+                      numberOfLines={2}
+                    >
+                      {crossfitBox.isDeleted ? '없어진 박스' : crossfitBox.name}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* 4. 최근 본 박스 */}
+        {recentlyViewedBoxes.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>최근 본 박스</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
+              {recentlyViewedBoxes.map((box) => (
+                <TouchableOpacity
+                  key={box.id}
+                  style={styles.boxChipSimple}
+                  onPress={() => router.push(`/crossfit-box/${box.id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.chipName} numberOfLines={2}>{box.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 5. 내 리뷰 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>내 리뷰</Text>
+          </View>
+          <TouchableOpacity style={styles.rowCard} onPress={() => router.push('/my-reviews' as any)} activeOpacity={0.7}>
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#588157" />
+            <View style={styles.rowCardInfo}>
+              <Text style={styles.rowCardTitle}>내가 작성한 리뷰</Text>
+              <Text style={styles.rowCardSub}>
+                {myReviews.length > 0 ? `최근 리뷰 ${myReviews.length}개` : '작성한 리뷰가 없어요'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -635,8 +669,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
+    padding: 14,
+    paddingBottom: 80,
   },
   centerContent: {
     flex: 1,
@@ -644,166 +678,119 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  homeBoxCard: {
+
+  /* 주변 박스 (한 묶음 카드) */
+  nearbyCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  homeBoxContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  homeBoxInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  homeBoxName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#344E41',
-  },
-  homeBoxAddress: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  homeBoxEmptyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
+    borderRadius: 12,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  homeBoxEmptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 12,
-    fontWeight: '500',
-  },
-  homeBoxEmptySubText: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  nearbyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  nearbyContent: {
+  nearbyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  nearbyLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  nearbyInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  nearbyTitle: {
-    fontSize: 18,
+  nearbyText: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#344E41',
   },
   nearbyCount: {
-    fontSize: 20,
     fontWeight: 'bold',
     color: '#588157',
   },
   nearbyAddress: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 2,
+    flex: 1,
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'right',
+    marginRight: 2,
   },
   mapButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginTop: 16,
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 10,
   },
   mapButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  permissionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  permissionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#344E41',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  permissionDescription: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+    fontWeight: '600',
   },
-  permissionButtons: {
-    width: '100%',
-    gap: 12,
-  },
-  permissionButton: {
+
+  /* 공통 Row 카드 (My Box, 내 리뷰 등) */
+  rowCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  permissionButtonSecondary: {
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#588157',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  permissionButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  rowCardInfo: {
+    flex: 1,
+  },
+  rowCardTitle: {
+    fontSize: 15,
     fontWeight: '600',
+    color: '#344E41',
   },
-  permissionButtonTextSecondary: {
-    color: '#588157',
+  rowCardSub: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 1,
+  },
+
+  /* My Box 빈 상태 */
+  emptyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  emptyCardTextWrap: {
+    flex: 1,
+  },
+  emptyCardTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  emptyCardSub: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 1,
+  },
+
+  /* 섹션 블록 */
+  section: {
+    marginTop: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -811,76 +798,97 @@ const styles = StyleSheet.create({
     color: '#344E41',
   },
   moreButton: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#588157',
   },
-  crossfitBoxPreviewScroll: {
-    marginHorizontal: -16,
+
+  /* 가로 스크롤 */
+  horizontalScroll: {
+    marginHorizontal: -14,
   },
-  crossfitBoxPreviewScrollContent: {
-    paddingHorizontal: 16,
+  horizontalScrollContent: {
+    paddingHorizontal: 14,
   },
-  crossfitBoxPreviewCard: {
+
+  /* 즐겨찾기 칩 */
+  boxChip: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 8,
-    marginRight: 12,
-    width: 120,
-    height: 120,
+    borderRadius: 10,
+    padding: 6,
+    marginRight: 10,
+    width: 96,
+    height: 88,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  crossfitBoxPreviewCardDeleted: {
+  boxChipDeleted: {
     backgroundColor: '#f8f8f8',
     borderWidth: 1,
     borderColor: '#e63946',
     borderStyle: 'dashed',
   },
-  crossfitBoxPreviewContent: {
+  chipFavButton: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chipRemoveButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chipContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  crossfitBoxPreviewName: {
-    fontSize: 14,
+  chipName: {
+    fontSize: 12,
     fontWeight: '500',
     color: '#344E41',
     textAlign: 'center',
   },
-  crossfitBoxPreviewNameDeleted: {
+  chipNameDeleted: {
     color: '#999',
     fontStyle: 'italic',
   },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 24,
-    height: 24,
+
+  /* 최근 본 Box 심플 칩 */
+  boxChipSimple: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginRight: 10,
+    minWidth: 80,
+    maxWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  deletedIcon: {
-    marginRight: 4,
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
+  /* 즐겨찾기 빈 상태 */
   emptyState: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
+    borderRadius: 12,
+    padding: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -889,25 +897,27 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
-    marginTop: 12,
-    marginBottom: 20,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  emptyRegisterButton: {
+  emptyActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 4,
   },
-  emptyRegisterButtonText: {
+  emptyActionButtonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 6,
   },
+
+  /* 에러 / 로딩 / 권한 */
   errorText: {
     fontSize: 16,
     color: '#666',
@@ -917,40 +927,77 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     backgroundColor: '#588157',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#588157',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  summaryCard: {
+  permissionCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 14,
+    padding: 28,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+  },
+  permissionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#344E41',
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  permissionDescription: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  permissionButtons: {
+    width: '100%',
+    gap: 10,
+  },
+  permissionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#588157',
+    borderRadius: 10,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  permissionButtonSecondary: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#588157',
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  permissionButtonTextSecondary: {
+    color: '#588157',
+  },
+
+  /* 스켈레톤 */
+  summaryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   skeleton: {
     overflow: 'hidden',
@@ -961,8 +1008,8 @@ const styles = StyleSheet.create({
   },
   skeletonButton: {
     backgroundColor: '#e0e0e0',
-    borderRadius: 12,
-    height: 48,
+    borderRadius: 10,
+    height: 40,
     width: '100%',
   },
 });

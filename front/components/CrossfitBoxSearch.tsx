@@ -25,6 +25,7 @@ export interface CrossfitBoxResult {
 
 interface CrossfitBoxSearchProps {
   onSelect: (crossfitBox: CrossfitBoxResult) => void;
+  onKeywordChange?: (keyword: string) => void;
   placeholder?: string;
   rightIcon?: React.ReactNode;
   disabled?: boolean;
@@ -32,6 +33,7 @@ interface CrossfitBoxSearchProps {
 
 export default function CrossfitBoxSearch({
   onSelect,
+  onKeywordChange,
   placeholder = '예: 크로스핏 XXX',
   rightIcon,
   disabled = false,
@@ -81,6 +83,7 @@ export default function CrossfitBoxSearch({
     setKeyword('');
     setCrossfitBoxes([]);
     setHasSearched(false);
+    onKeywordChange?.('');
   };
 
   return (
@@ -91,7 +94,10 @@ export default function CrossfitBoxSearch({
         <TextInput
           style={styles.input}
           value={keyword}
-          onChangeText={setKeyword}
+          onChangeText={(text) => {
+            setKeyword(text);
+            onKeywordChange?.(text);
+          }}
           placeholder={placeholder}
           placeholderTextColor="#A3B18A"
           editable={!disabled}
