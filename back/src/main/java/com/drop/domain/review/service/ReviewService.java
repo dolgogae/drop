@@ -5,6 +5,8 @@ import com.drop.domain.crossfitbox.repository.CrossfitBoxRepository;
 import com.drop.domain.member.data.Member;
 import com.drop.domain.member.repository.MemberRepository;
 import com.drop.domain.review.data.Review;
+import com.drop.domain.review.dto.MyReviewListResponseDto;
+import com.drop.domain.review.dto.MyReviewResponseDto;
 import com.drop.domain.review.dto.ReviewListResponseDto;
 import com.drop.domain.review.dto.ReviewRequestDto;
 import com.drop.domain.review.dto.ReviewResponseDto;
@@ -27,6 +29,22 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
     private final CrossfitBoxRepository crossfitBoxRepository;
+
+    @Transactional(readOnly = true)
+    public MyReviewListResponseDto getMyReviews(Long memberId, int page, int size) {
+        Page<Review> reviewPage = reviewRepository.findByMemberIdWithCrossfitBox(memberId, PageRequest.of(page, size));
+
+        List<MyReviewResponseDto> reviewDtos = reviewPage.getContent().stream()
+                .map(this::toMyReviewResponseDto)
+                .collect(Collectors.toList());
+
+        return MyReviewListResponseDto.builder()
+                .reviews(reviewDtos)
+                .currentPage(reviewPage.getNumber())
+                .totalPages(reviewPage.getTotalPages())
+                .hasNext(reviewPage.hasNext())
+                .build();
+    }
 
     @Transactional(readOnly = true)
     public ReviewListResponseDto getReviewsByCrossfitBoxId(Long crossfitBoxId, int page, int size) {
@@ -92,6 +110,18 @@ public class ReviewService {
         }
 
         reviewRepository.delete(review);
+    }
+
+    private MyReviewResponseDto toMyReviewResponseDto(Review review) {
+        return MyReviewResponseDto.builder()
+                .reviewId(review.getId())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .crossfitBoxId(review.getCrossfitBox().getId())
+                .crossfitBoxName(review.getCrossfitBox().getName())
+                .createdAt(review.getCreatedAt())
+                .updatedAt(review.getUpdatedAt())
+                .build();
     }
 
     private ReviewResponseDto toResponseDto(Review review) {

@@ -234,7 +234,7 @@ export default function MapScreen() {
       await axiosInstance.post('/member-crossfit-box', { crossfitBoxId, isFavorite: false });
       setMyCrossfitBoxIds((prev) => new Set(prev).add(crossfitBoxId));
       crossfitBoxEvents.emit();
-      Alert.alert('성공', '내 Box에 추가되었습니다.');
+      Alert.alert('성공', '내 박스에 추가되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '추가에 실패했습니다.';
       Alert.alert('오류', message);
@@ -253,7 +253,7 @@ export default function MapScreen() {
         return next;
       });
       crossfitBoxEvents.emit();
-      Alert.alert('성공', '내 Box에서 제거되었습니다.');
+      Alert.alert('성공', '내 박스에서 제거되었습니다.');
     } catch (error: any) {
       const message = error.response?.data?.message || '제거에 실패했습니다.';
       Alert.alert('오류', message);
@@ -337,7 +337,7 @@ export default function MapScreen() {
             지도 기능은 모바일 앱에서 이용 가능합니다.
           </Text>
           <View style={styles.webCrossfitBoxList}>
-            <Text style={styles.webListTitle}>등록된 Box 목록</Text>
+            <Text style={styles.webListTitle}>등록된 박스 목록</Text>
             {isInitialLoad ? (
               <ActivityIndicator size="large" color="#588157" />
             ) : (
@@ -347,7 +347,7 @@ export default function MapScreen() {
                 renderItem={renderCrossfitBoxItem}
                 style={styles.crossfitBoxList}
                 ListEmptyComponent={
-                  <Text style={styles.emptyText}>등록된 Box가 없습니다.</Text>
+                  <Text style={styles.emptyText}>등록된 박스가 없습니다.</Text>
                 }
               />
             )}
@@ -409,7 +409,7 @@ export default function MapScreen() {
             <Text style={styles.bottomSheetTitle}>
               {selectedCluster.count === 1
                 ? selectedCluster.crossfitBoxes[0].name
-                : `주변 Box ${selectedCluster.count}개`}
+                : `주변 박스 ${selectedCluster.count}개`}
             </Text>
             <TouchableOpacity onPress={closeBottomSheet}>
               <Text style={styles.closeButton}>닫기</Text>

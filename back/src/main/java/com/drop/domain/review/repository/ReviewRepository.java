@@ -17,4 +17,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Double findAverageRatingByCrossfitBoxId(@Param("crossfitBoxId") Long crossfitBoxId);
 
     long countByCrossfitBoxId(Long crossfitBoxId);
+
+    @Query(value = "SELECT r FROM Review r JOIN FETCH r.crossfitBox WHERE r.member.id = :memberId ORDER BY r.createdAt DESC",
+           countQuery = "SELECT COUNT(r) FROM Review r WHERE r.member.id = :memberId")
+    Page<Review> findByMemberIdWithCrossfitBox(@Param("memberId") Long memberId, Pageable pageable);
 }

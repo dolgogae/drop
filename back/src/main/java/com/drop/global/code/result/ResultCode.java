@@ -46,7 +46,8 @@ public enum ResultCode {
     REVIEW_LIST_SUCCESS(200, "R001", "리뷰 목록 조회 성공"),
     REVIEW_CREATE_SUCCESS(200, "R002", "리뷰가 등록되었습니다."),
     REVIEW_UPDATE_SUCCESS(200, "R003", "리뷰가 수정되었습니다."),
-    REVIEW_DELETE_SUCCESS(200, "R004", "리뷰가 삭제되었습니다.");
+    REVIEW_DELETE_SUCCESS(200, "R004", "리뷰가 삭제되었습니다."),
+    MY_REVIEW_LIST_SUCCESS(200, "R005", "내 리뷰 목록 조회 성공");
 
     private int status;
     private final String code;
