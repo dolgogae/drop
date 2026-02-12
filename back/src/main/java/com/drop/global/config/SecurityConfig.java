@@ -54,7 +54,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/auth/**", "/user/**",
             "/crossfit-boxes/**", "/home/**",
-            "/image/**"};
+            "/image/**",
+            "/gymsync/**"};
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{

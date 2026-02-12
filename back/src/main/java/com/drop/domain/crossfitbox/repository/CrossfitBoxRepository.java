@@ -27,4 +27,7 @@ public interface CrossfitBoxRepository extends JpaRepository<CrossfitBox, Long> 
 
     @Query("SELECT c FROM CrossfitBox c WHERE LOWER(REPLACE(c.name, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))")
     List<CrossfitBox> searchByName(@Param("keyword") String keyword);
+
+    @Query("SELECT c.name FROM CrossfitBox c WHERE c.name IS NOT NULL")
+    List<String> findAllNames();
 }

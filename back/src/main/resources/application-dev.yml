@@ -24,6 +24,11 @@ spring:
   redis:
     port: 6379
     host: 127.0.0.1
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
   cache:
     type: redis
 
@@ -53,6 +58,28 @@ jwt:
 kakao:
   api:
     base-url: https://dapi.kakao.com
+
+google:
+  places:
+    base-url: https://maps.googleapis.com/maps/api/place
+    language: ko
+    timeout-seconds: 30
+
+batch:
+  auto-subdivision:
+    enabled: true
+    threshold: 55
+  details-api:
+    enabled: true
+    fields: formatted_phone_number,website
+  schedule:
+    enabled: false
+    cron: "0 0 3 1 * ?"
+    timezone: Asia/Seoul
+
+output:
+  directory: ./output
+  report-directory: ./reports
 
 file:
   upload:

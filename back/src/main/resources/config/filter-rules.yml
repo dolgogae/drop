@@ -1,0 +1,48 @@
+filterRules:
+  include:
+    keywords:
+      - "크로스핏"
+      - "CrossFit"
+      - "씨에프"
+    keywordPatterns:
+      - pattern: "CF\\s+\\w+"
+        caseSensitive: false
+    combinedKeywords:
+      cfKeywords:
+        - "CF"
+      gymKeywords:
+        - "gym"
+        - "box"
+        - "피트니스"
+        - "짐"
+
+  exclude:
+    keywords:
+      - "필라테스"
+      - "Pilates"
+      - "요가"
+      - "Yoga"
+      - "PT샵"
+      - "헬스장"
+      - "스피닝"
+      - "Spinning"
+      - "복싱"
+      - "Boxing"
+      - "주짓수"
+      - "Jiu-Jitsu"
+      - "무에타이"
+      - "Muay Thai"
+      - "수영"
+      - "Swimming"
+      - "골프"
+      - "Golf"
+      - "테니스"
+      - "Tennis"
+    googleTypes:
+      - "yoga_studio"
+      - "spa"
+      - "physiotherapist"
+
+  deduplication:
+    primaryKey: "place_id"
+    similarityThreshold: 0.9
