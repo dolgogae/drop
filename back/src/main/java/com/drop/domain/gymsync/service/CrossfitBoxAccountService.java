@@ -3,6 +3,7 @@ package com.drop.domain.gymsync.service;
 import com.drop.domain.gymsync.data.InactiveGymCandidate;
 import com.drop.domain.gymsync.dto.PlaceDto;
 import com.drop.domain.gymsync.repository.InactiveGymCandidateRepository;
+import com.drop.domain.base.Address;
 import com.drop.domain.crossfitbox.data.CrossfitBox;
 import com.drop.domain.crossfitbox.repository.CrossfitBoxRepository;
 import com.drop.global.enums.UserRole;
@@ -52,7 +53,7 @@ public class CrossfitBoxAccountService {
                         .role(UserRole.GYM)
                         .name(place.getName())
                         .phoneNumber(place.getPhoneNumber())
-                        .etcInfo(place.getFormattedAddress())
+                        .address(buildAddressFromPlace(place))
                         .latitude(place.getLatitude())
                         .longitude(place.getLongitude())
                         .build();
@@ -135,7 +136,7 @@ public class CrossfitBoxAccountService {
                         .role(UserRole.GYM)
                         .name(place.getName())
                         .phoneNumber(place.getPhoneNumber())
-                        .etcInfo(place.getFormattedAddress())
+                        .address(buildAddressFromPlace(place))
                         .latitude(place.getLatitude())
                         .longitude(place.getLongitude())
                         .build();
@@ -187,6 +188,14 @@ public class CrossfitBoxAccountService {
                 places.size(), created, skipped, inactive, failed);
 
         return result;
+    }
+
+    private Address buildAddressFromPlace(PlaceDto place) {
+        return Address.builder()
+                .countryCode("KR")
+                .addressLine1(place.getFormattedAddress())
+                .addressSource(Address.AddressSource.MANUAL)
+                .build();
     }
 
     private boolean isNearby(CrossfitBox box, PlaceDto place) {
