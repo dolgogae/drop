@@ -111,7 +111,6 @@ export default function LoginScreen() {
       dispatch(clearProfile());
       await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
 
-      console.log('[Login] Attempting login with email:', email);
       const response = await axiosInstance.post('/auth/login', { email, password });
       const data = response.data;
       if (response.status === 200 && data.data?.accessToken) {
@@ -141,7 +140,6 @@ export default function LoginScreen() {
     } catch (e: any) {
       if (e.response) {
         const message = e.response.data?.message || t('validation.invalidCredentials');
-        console.log(message);
         Alert.alert(t('auth.loginFailed'), message);
       } else {
         Alert.alert(t('auth.loginFailed'), t('validation.networkError'));

@@ -49,7 +49,7 @@ springdoc:
     disabled: true
 
 logging.level:
-  org.hibernate.SQL: debug
+  org.hibernate.SQL: warn
 
 jwt:
   access-token-expiration-millis: 3600000
