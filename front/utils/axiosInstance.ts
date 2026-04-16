@@ -18,11 +18,6 @@ axiosInstance.interceptors.request.use(
     const state = store.getState();
     const accessToken = state.auth.accessToken;
 
-    console.log('[axios] Base URL:', config.baseURL);
-    console.log('[axios] Request URL:', config.url);
-    console.log('[axios] Full URL:', `${config.baseURL}${config.url}`);
-    console.log('[axios] Token exists:', !!accessToken);
-
     const isAuthRequest = config.url?.startsWith('/auth/');
 
     if (accessToken && !isAuthRequest) {
@@ -41,20 +36,8 @@ axiosInstance.interceptors.request.use(
 );
 
 axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log('[axios] Response status:', response.status);
-    return response;
-  },
-  (error) => {
-    console.log('[axios] Error:', error.message);
-    if (error.response) {
-      console.log('[axios] Error status:', error.response.status);
-      console.log('[axios] Error data:', error.response.data);
-    } else if (error.request) {
-      console.log('[axios] No response received - request was made but no response');
-    }
-    return Promise.reject(error);
-  }
+  (response) => response,
+  (error) => Promise.reject(error)
 );
 
 export default axiosInstance;

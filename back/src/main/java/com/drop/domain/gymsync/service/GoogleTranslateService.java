@@ -62,9 +62,44 @@ public class GoogleTranslateService {
     }
 
     private String formatAsUsername(String text) {
-        return text.toLowerCase()
+        String formatted = text.toLowerCase()
                 .replaceAll("[^a-z0-9\\s-]", "")
                 .trim()
                 .replaceAll("\\s+", "-");
+
+        // 한글 등 비영문 이름 번역 실패 시 빈 문자열 방지 → 로마자 변환 fallback
+        if (formatted.isEmpty()) {
+            formatted = romanize(text);
+        }
+
+        return formatted;
+    }
+
+    /**
+     * 한글 이름을 간단한 로마자로 변환 (번역 API 실패 시 fallback)
+     * 초성/중성/종성 분리 후 로마자 매핑
+     */
+    private String romanize(String korean) {
+        String[] initials = {"g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"};
+        String[] medials = {"a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"};
+        String[] finals = {"", "g", "kk", "gs", "n", "nj", "nh", "d", "l", "lg", "lm", "lb", "ls", "lt", "lp", "lh", "m", "b", "bs", "s", "ss", "ng", "j", "ch", "k", "t", "p", "h"};
+
+        StringBuilder sb = new StringBuilder();
+        for (char c : korean.toCharArray()) {
+            if (c >= 0xAC00 && c <= 0xD7A3) {
+                int code = c - 0xAC00;
+                int initialIdx = code / (21 * 28);
+                int medialIdx = (code % (21 * 28)) / 28;
+                int finalIdx = code % 28;
+                sb.append(initials[initialIdx]).append(medials[medialIdx]).append(finals[finalIdx]);
+            } else if (Character.isLetterOrDigit(c)) {
+                sb.append(Character.toLowerCase(c));
+            } else if (c == ' ') {
+                sb.append('-');
+            }
+        }
+
+        String result = sb.toString().replaceAll("-+", "-").replaceAll("^-|-$", "");
+        return result.isEmpty() ? "unknown-box" : result;
     }
 }

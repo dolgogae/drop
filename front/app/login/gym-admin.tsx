@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useI18n } from '../../contexts/i18n';
 import { setTokens, clearTokens, clearProfile } from '../../store';
@@ -141,7 +142,8 @@ export default function GymAdminLoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <Text style={styles.title}>{t('auth.gymAdminLogin')}</Text>
       <Text style={styles.subtitle}>{t('auth.gymAdminLoginDesc')}</Text>
 
@@ -194,6 +196,7 @@ export default function GymAdminLoginScreen() {
         <Text style={styles.registerButtonText}>{t('auth.gymRegister')}</Text>
       </TouchableOpacity>
 
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }

@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '../utils/axiosInstance';
@@ -67,7 +66,7 @@ export default function CrossfitBoxSearch({
         const response = await axiosInstance.get('/crossfit-boxes/search', {
           params: { keyword: debouncedKeyword },
         });
-        setCrossfitBoxes(response.data.data || []);
+        setCrossfitBoxes(response.data?.data || []);
       } catch (error) {
         console.error('크로스핏박스 검색 실패:', error);
         setCrossfitBoxes([]);

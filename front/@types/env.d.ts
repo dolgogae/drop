@@ -9,6 +9,7 @@ declare global {
       EXPO_PUBLIC_GOOGLE_CLIENT_ID: string;
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: string;
       EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: string;
+      EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY: string;
     }
   }
 }

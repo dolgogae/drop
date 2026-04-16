@@ -21,7 +21,7 @@ java {
 }
 
 jacoco {
-    toolVersion = "0.8.7"
+    toolVersion = "0.8.12"
 }
 
 configurations {
@@ -51,9 +51,9 @@ dependencies {
 
     // JWT
     implementation "io.jsonwebtoken:jjwt-api:0.11.2"
-    runtimeOnly "io.jsonwebtoken:jjwt-jackson:0.11.2",
-            "io.jsonwebtoken:jjwt-impl:0.11.2",
-            "org.bouncycastle:bcprov-jdk15on:1.68"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:0.11.2"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:0.11.2"
+    runtimeOnly "org.bouncycastle:bcprov-jdk15on:1.68"
 
     // DB
     runtimeOnly 'com.h2database:h2'

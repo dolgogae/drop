@@ -9,21 +9,24 @@ import {
   Dimensions,
   FlatList,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axiosInstance from '../../utils/axiosInstance';
 import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
 
 let MapView: any = null;
 let Marker: any = null;
+let Circle: any = null;
 if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Maps = require('react-native-maps');
   MapView = Maps.default;
   Marker = Maps.Marker;
+  Circle = Maps.Circle;
 }
 
 type Region = {
@@ -55,12 +58,57 @@ const { width, height } = Dimensions.get('window');
 const CLUSTER_DISTANCE = 0.01;
 
 const DEBOUNCE_DELAY = 300;
+const REGION_CHANGE_EPSILON = 0.0005;
+const METERS_PER_LATITUDE_DEGREE = 111320;
+
+const isSameRegion = (a: Region | null, b: Region) => {
+  if (!a) {
+    return false;
+  }
+
+  return (
+    Math.abs(a.latitude - b.latitude) < REGION_CHANGE_EPSILON &&
+    Math.abs(a.longitude - b.longitude) < REGION_CHANGE_EPSILON &&
+    Math.abs(a.latitudeDelta - b.latitudeDelta) < REGION_CHANGE_EPSILON &&
+    Math.abs(a.longitudeDelta - b.longitudeDelta) < REGION_CHANGE_EPSILON
+  );
+};
+
+const getCircleStyle = (count: number) => {
+  if (count >= 10) {
+    return {
+      pixelRadius: 18,
+      fillColor: 'rgba(88, 129, 87, 0.48)',
+      strokeColor: 'rgba(52, 78, 65, 1)',
+      strokeWidth: 2.5,
+    };
+  }
+
+  if (count >= 4) {
+    return {
+      pixelRadius: 14,
+      fillColor: 'rgba(88, 129, 87, 0.42)',
+      strokeColor: 'rgba(52, 78, 65, 0.98)',
+      strokeWidth: 2.5,
+    };
+  }
+
+  return {
+    pixelRadius: count > 1 ? 11 : 7,
+    fillColor: count > 1 ? 'rgba(88, 129, 87, 0.34)' : 'rgba(88, 129, 87, 0.72)',
+    strokeColor: count > 1 ? 'rgba(52, 78, 65, 0.96)' : 'rgba(52, 78, 65, 1)',
+    strokeWidth: count > 1 ? 2.25 : 2,
+  };
+};
 
 export default function MapScreen() {
   const router = useRouter();
   const { lat, lng, t } = useLocalSearchParams<{ lat?: string; lng?: string; t?: string }>();
   const mapRef = useRef<typeof MapView>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const regionRef = useRef<Region | null>(null);
+  const skipNextRegionChangeRef = useRef(false);
+  const lastBoundsRequestRef = useRef<string | null>(null);
   const [crossfitBoxes, setCrossfitBoxes] = useState<CrossfitBox[]>([]);
   const [myCrossfitBoxIds, setMyCrossfitBoxIds] = useState<Set<number>>(new Set());
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
@@ -77,13 +125,67 @@ export default function MapScreen() {
     longitudeDelta: 0.05,
   });
 
+  useEffect(() => {
+    regionRef.current = region;
+  }, [region]);
+
+  const fetchMyCrossfitBoxes = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/member-crossfit-box');
+      if (response.data?.data) {
+        const ids = new Set<number>(response.data.data.map((c: any) => c.crossfitBoxId));
+        setMyCrossfitBoxIds(ids);
+      }
+    } catch (error) {
+      console.error('내 크로스핏박스 목록 조회 실패:', error);
+    }
+  }, []);
+
+  const fetchCrossfitBoxesByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
+    try {
+      if (isInitial) {
+        setIsInitialLoad(true);
+      }
+
+      const swLat = currentRegion.latitude - currentRegion.latitudeDelta / 2;
+      const swLng = currentRegion.longitude - currentRegion.longitudeDelta / 2;
+      const neLat = currentRegion.latitude + currentRegion.latitudeDelta / 2;
+      const neLng = currentRegion.longitude + currentRegion.longitudeDelta / 2;
+      const requestKey = [swLat, swLng, neLat, neLng].map((value) => value.toFixed(6)).join(':');
+
+      if (lastBoundsRequestRef.current === requestKey) {
+        return;
+      }
+
+      lastBoundsRequestRef.current = requestKey;
+
+      const response = await axiosInstance.get('/crossfit-boxes/map/bounds', {
+        params: { swLat, swLng, neLat, neLng },
+      });
+      if (response.data?.data) {
+        setCrossfitBoxes(response.data.data);
+      }
+    } catch (error) {
+      console.error('크로스핏박스 목록 조회 실패:', error);
+    } finally {
+      if (isInitial) {
+        setIsInitialLoad(false);
+      }
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+
       const moveToCurrentLocation = async () => {
         try {
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
-            fetchCrossfitBoxesByBounds(region, true);
+            const fallbackRegion = regionRef.current;
+            if (fallbackRegion && isActive) {
+              fetchCrossfitBoxesByBounds(fallbackRegion, true);
+            }
             return;
           }
 
@@ -98,18 +200,31 @@ export default function MapScreen() {
             longitudeDelta: 0.05,
           };
 
+          if (!isActive) {
+            return;
+          }
+
           setRegion(newRegion);
+          regionRef.current = newRegion;
+          skipNextRegionChangeRef.current = true;
           mapRef.current?.animateToRegion(newRegion, 300);
           fetchCrossfitBoxesByBounds(newRegion, true);
         } catch (error) {
           console.error('현재 위치 조회 실패:', error);
-          fetchCrossfitBoxesByBounds(region, true);
+          const fallbackRegion = regionRef.current;
+          if (fallbackRegion && isActive) {
+            fetchCrossfitBoxesByBounds(fallbackRegion, true);
+          }
         }
       };
 
       moveToCurrentLocation();
       fetchMyCrossfitBoxes();
-    }, [])
+
+      return () => {
+        isActive = false;
+      };
+    }, [fetchCrossfitBoxesByBounds, fetchMyCrossfitBoxes])
   );
 
   useEffect(() => {
@@ -131,17 +246,19 @@ export default function MapScreen() {
         longitudeDelta: 0.05,
       };
       setRegion(newRegion);
+      regionRef.current = newRegion;
+      skipNextRegionChangeRef.current = true;
       mapRef.current?.animateToRegion(newRegion, 300);
       fetchCrossfitBoxesByBounds(newRegion, true);
     }
-  }, [lat, lng, t]);
+  }, [lat, lng, t, fetchCrossfitBoxesByBounds]);
 
   useEffect(() => {
     const unsubscribe = crossfitBoxEvents.subscribe(() => {
       fetchMyCrossfitBoxes();
     });
     return unsubscribe;
-  }, []);
+  }, [fetchMyCrossfitBoxes]);
 
   const clusters = useMemo(() => {
     if (crossfitBoxes.length === 0) return [];
@@ -190,43 +307,10 @@ export default function MapScreen() {
     return clustered;
   }, [crossfitBoxes, region.latitudeDelta]);
 
-  const fetchCrossfitBoxesByBounds = useCallback(async (currentRegion: Region, isInitial = false) => {
-    try {
-      if (isInitial) {
-        setIsInitialLoad(true);
-      }
-
-      const swLat = currentRegion.latitude - currentRegion.latitudeDelta / 2;
-      const swLng = currentRegion.longitude - currentRegion.longitudeDelta / 2;
-      const neLat = currentRegion.latitude + currentRegion.latitudeDelta / 2;
-      const neLng = currentRegion.longitude + currentRegion.longitudeDelta / 2;
-
-      const response = await axiosInstance.get('/crossfit-boxes/map/bounds', {
-        params: { swLat, swLng, neLat, neLng },
-      });
-      if (response.data?.data) {
-        setCrossfitBoxes(response.data.data);
-      }
-    } catch (error) {
-      console.error('크로스핏박스 목록 조회 실패:', error);
-    } finally {
-      if (isInitial) {
-        setIsInitialLoad(false);
-      }
-    }
-  }, []);
-
-  const fetchMyCrossfitBoxes = async () => {
-    try {
-      const response = await axiosInstance.get('/member-crossfit-box');
-      if (response.data?.data) {
-        const ids = new Set<number>(response.data.data.map((c: any) => c.crossfitBoxId));
-        setMyCrossfitBoxIds(ids);
-      }
-    } catch (error) {
-      console.error('내 크로스핏박스 목록 조회 실패:', error);
-    }
-  };
+  const metersPerPixel = useMemo(() => {
+    const visibleHeightMeters = region.latitudeDelta * METERS_PER_LATITUDE_DEGREE;
+    return Math.max(visibleHeightMeters / height, 1);
+  }, [region.latitudeDelta]);
 
   const handleAddToMyCrossfitBoxes = async (crossfitBoxId: number) => {
     try {
@@ -267,7 +351,23 @@ export default function MapScreen() {
   };
 
   const handleRegionChangeComplete = useCallback((newRegion: Region) => {
+    const previousRegion = regionRef.current;
+
+    if (skipNextRegionChangeRef.current) {
+      skipNextRegionChangeRef.current = false;
+      if (!isSameRegion(previousRegion, newRegion)) {
+        setRegion(newRegion);
+        regionRef.current = newRegion;
+      }
+      return;
+    }
+
+    if (isSameRegion(previousRegion, newRegion)) {
+      return;
+    }
+
     setRegion(newRegion);
+    regionRef.current = newRegion;
 
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -378,27 +478,47 @@ export default function MapScreen() {
           showsMyLocationButton={true}
         >
           {clusters.map((cluster) => (
-            <Marker
-              key={cluster.id}
-              coordinate={{
-                latitude: cluster.latitude,
-                longitude: cluster.longitude,
-              }}
-              onPress={() => handleClusterPress(cluster)}
-            >
-              <View
-                style={[
-                  styles.clusterMarker,
-                  cluster.count > 1 && styles.clusterMarkerMultiple,
-                ]}
-              >
-                {cluster.count > 1 ? (
-                  <Text style={styles.clusterCount}>{cluster.count}</Text>
-                ) : (
-                  <View style={styles.singleMarker} />
-                )}
-              </View>
-            </Marker>
+            (() => {
+              const circleStyle = getCircleStyle(cluster.count);
+              const radius = Math.min(
+                Math.max(circleStyle.pixelRadius * metersPerPixel, 12),
+                250
+              );
+
+              return (
+                <React.Fragment
+                  key={cluster.id}
+                >
+                  {Circle && (
+                    <Circle
+                      center={{
+                        latitude: cluster.latitude,
+                        longitude: cluster.longitude,
+                      }}
+                      radius={radius}
+                      fillColor={circleStyle.fillColor}
+                      strokeColor={circleStyle.strokeColor}
+                      strokeWidth={circleStyle.strokeWidth}
+                      tappable
+                      onPress={() => handleClusterPress(cluster)}
+                    />
+                  )}
+                  {Marker && (
+                    <Marker
+                      coordinate={{
+                        latitude: cluster.latitude,
+                        longitude: cluster.longitude,
+                      }}
+                      anchor={{ x: 0.5, y: 0.5 }}
+                      tracksViewChanges={false}
+                      onPress={() => handleClusterPress(cluster)}
+                    >
+                      <View style={styles.touchTarget} />
+                    </Marker>
+                  )}
+                </React.Fragment>
+              );
+            })()
           ))}
         </MapView>
       )}
@@ -446,37 +566,11 @@ const styles = StyleSheet.create({
     width: width,
     height: height,
   },
-  clusterMarker: {
+  touchTarget: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#588157',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  clusterMarkerMultiple: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#344E41',
-  },
-  clusterCount: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  singleMarker: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(0, 0, 0, 0.01)',
   },
   bottomSheet: {
     position: 'absolute',

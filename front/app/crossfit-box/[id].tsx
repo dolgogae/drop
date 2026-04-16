@@ -6,13 +6,13 @@ import {
   Alert,
   Animated,
   Linking,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axiosInstance from '../../utils/axiosInstance';
 import { saveRecentlyViewedBox } from '../../utils/recentStorage';
 

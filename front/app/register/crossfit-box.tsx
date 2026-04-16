@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AddressSearchModal, { AddressData } from '../../components/AddressSearchModal';
 import { useI18n } from '../../contexts/i18n';
 import axiosInstance from '../../utils/axiosInstance';
@@ -152,8 +153,9 @@ export default function CrossfitBoxRegisterScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
         <Text style={styles.title}>{t('crossfitBox.title')}</Text>
 
         <Text style={styles.sectionTitle}>{t('crossfitBox.info')}</Text>
@@ -247,13 +249,14 @@ export default function CrossfitBoxRegisterScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.linkBtn}>
           <Text style={styles.link}>{t('common.back')}</Text>
         </TouchableOpacity>
-      </View>
+        </View>
 
-      <AddressSearchModal
-        visible={addressModalVisible}
-        onClose={() => setAddressModalVisible(false)}
-        onSelect={handleAddressSelect}
-      />
-    </ScrollView>
+        <AddressSearchModal
+          visible={addressModalVisible}
+          onClose={() => setAddressModalVisible(false)}
+          onSelect={handleAddressSelect}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }

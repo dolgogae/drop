@@ -13,7 +13,7 @@ spring:
     driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -40,7 +40,7 @@ springdoc:
     disabled: true
 
 logging.level:
-  org.hibernate.SQL: debug
+  org.hibernate.SQL: warn
 
 jwt:
   access-token-expiration-millis: 360000
@@ -49,4 +49,3 @@ jwt:
 
 aes:
   secret-key: 6dee66ecc416d128993ccb10534dcba7
-

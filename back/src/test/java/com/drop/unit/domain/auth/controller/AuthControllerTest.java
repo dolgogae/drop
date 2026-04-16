@@ -13,6 +13,7 @@ import com.drop.domain.crossfitbox.service.CrossfitBoxService;
 import com.drop.domain.member.dto.MemberCreateDto;
 import com.drop.domain.member.dto.MemberDto;
 import com.drop.domain.member.service.MemberService;
+import com.drop.global.code.error.GlobalExceptionHandler;
 import com.drop.global.code.result.ResultCode;
 import com.drop.global.code.result.ResultResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,7 +66,9 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(authController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
@@ -113,6 +116,23 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.email").value("member@email.com"));
+    }
+
+    @Test
+    @DisplayName("일반 회원(Member) 가입 - 잘못된 이메일은 400")
+    void signUpMember_invalidEmail() throws Exception {
+        // given
+        MemberCreateDto dto = new MemberCreateDto();
+        dto.setEmail("invalid-email");
+        dto.setPassword("password123");
+        dto.setUsername("memberUser");
+
+        // when & then
+        mockMvc.perform(post("/auth/sign-up/member")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C002"));
     }
 
     @Test

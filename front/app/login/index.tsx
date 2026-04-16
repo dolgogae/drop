@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useI18n } from '../../contexts/i18n';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
@@ -110,7 +111,6 @@ export default function LoginScreen() {
       dispatch(clearProfile());
       await AsyncStorage.multiRemove([AUTH_TOKENS_KEY, PROFILE_KEY]);
 
-      console.log('[Login] Attempting login with email:', email);
       const response = await axiosInstance.post('/auth/login', { email, password });
       const data = response.data;
       if (response.status === 200 && data.data?.accessToken) {
@@ -140,7 +140,6 @@ export default function LoginScreen() {
     } catch (e: any) {
       if (e.response) {
         const message = e.response.data?.message || t('validation.invalidCredentials');
-        console.log(message);
         Alert.alert(t('auth.loginFailed'), message);
       } else {
         Alert.alert(t('auth.loginFailed'), t('validation.networkError'));
@@ -197,7 +196,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <Text style={styles.title}>{t('auth.login')}</Text>
       <TextInput
         style={styles.input}
@@ -260,6 +260,7 @@ export default function LoginScreen() {
         <Text style={styles.registerButtonText}>{t('auth.goToRegister')}</Text>
       </TouchableOpacity>
 
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }

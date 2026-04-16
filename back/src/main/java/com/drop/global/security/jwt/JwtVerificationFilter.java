@@ -36,14 +36,9 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
             String accessToken = jwtTokenProvider.resolveAccessToken(request);
-            log.info("[JwtVerificationFilter] URI: {}, Token exists: {}", request.getRequestURI(), accessToken != null);
             if (StringUtils.hasText(accessToken) && doNotLogout(accessToken)
                     && jwtTokenProvider.validateToken(accessToken, response)) {
                 setAuthenticationToContext(accessToken);
-                log.info("[JwtVerificationFilter] Authentication set successfully");
-            } else {
-                log.warn("[JwtVerificationFilter] Authentication NOT set - token: {}, doNotLogout: {}",
-                    accessToken != null, accessToken != null ? doNotLogout(accessToken) : "N/A");
             }
         } catch (RuntimeException e) {
             log.error("[JwtVerificationFilter] Exception occurred: {}", e.getMessage(), e);
@@ -72,6 +67,5 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
     private void setAuthenticationToContext(String accessToken) {
         Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.info("# Token verification success!");
     }
 }

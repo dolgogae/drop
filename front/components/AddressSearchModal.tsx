@@ -3,12 +3,12 @@ import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useI18n } from '../contexts/i18n';
 
