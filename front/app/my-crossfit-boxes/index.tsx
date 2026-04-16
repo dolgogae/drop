@@ -54,7 +54,7 @@ export default function MyCrossfitBoxesScreen() {
   const handleToggleFavorite = async (crossfitBoxId: number) => {
     try {
       setTogglingId(crossfitBoxId);
-      const response = await axiosInstance.patch(`/api/member-crossfit-box/${crossfitBoxId}/favorite`);
+      const response = await axiosInstance.patch(`/member-crossfit-box/${crossfitBoxId}/favorite`);
       if (response.data?.data) {
         setCrossfitBoxes((prev) =>
           prev.map((c) =>
@@ -81,7 +81,7 @@ export default function MyCrossfitBoxesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axiosInstance.delete(`/api/member-crossfit-box/${crossfitBoxId}`);
+              await axiosInstance.delete(`/member-crossfit-box/${crossfitBoxId}`);
               setCrossfitBoxes((prev) => prev.filter((c) => c.crossfitBoxId !== crossfitBoxId));
             } catch (error: any) {
               const message = error.response?.data?.message || '제거에 실패했습니다.';
