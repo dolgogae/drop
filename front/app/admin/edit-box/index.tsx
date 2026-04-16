@@ -6,7 +6,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AddressSearchModal, { AddressData } from '../../../components/AddressSearchModal';
 import { useI18n } from '../../../contexts/i18n';
 import axiosInstance from '../../../utils/axiosInstance';

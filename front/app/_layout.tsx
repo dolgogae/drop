@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Provider, useDispatch, useSelector } from 'react-redux';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { I18nProvider } from '../contexts/i18n';
 import { RootState, setTokens, store } from '../store';
@@ -14,6 +15,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
+  const [hasHydrated, setHasHydrated] = useState(false);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
   const role = useSelector((state: RootState) => state.auth.role);
@@ -31,16 +33,18 @@ function RootLayoutNav() {
       } catch (error) {
         console.error('Failed to restore tokens:', error);
       }
+      setHasHydrated(true);
       setIsLoading(false);
     };
     checkLogin();
   }, [dispatch]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !hasHydrated) return;
 
-    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
-    const inAdminGroup = segments[0] === 'admin';
+    const [rootSegment] = segments;
+    const inAuthGroup = rootSegment === 'login' || rootSegment === 'register';
+    const inAdminGroup = rootSegment === 'admin';
 
     if (!accessToken) {
       if (!inAuthGroup) {
@@ -61,7 +65,7 @@ function RootLayoutNav() {
       router.replace('/(tabs)');
       return;
     }
-  }, [isLoading, accessToken, role, segments]);
+  }, [isLoading, hasHydrated, accessToken, role, segments, router]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -77,9 +81,11 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <I18nProvider>
-        <RootLayoutNav />
-      </I18nProvider>
+      <SafeAreaProvider>
+        <I18nProvider>
+          <RootLayoutNav />
+        </I18nProvider>
+      </SafeAreaProvider>
     </Provider>
   );
 }

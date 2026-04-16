@@ -9,13 +9,13 @@ import {
   AppStateStatus,
   Linking,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeState, LocationMode } from '../../constants/enums';
 import axiosInstance from '../../utils/axiosInstance';
 import { crossfitBoxEvents } from '../../utils/crossfitBoxEvents';
@@ -59,6 +59,7 @@ const snapToGrid = (value: number, gridSize: number = 0.005): number => {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [homeState, setHomeState] = useState<HomeState>(HomeState.LOADING);
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -487,7 +488,13 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: Math.max(insets.top, 10) + 8 },
+        ]}
+      >
         {/* 1. 주변 박스 */}
         <View style={styles.nearbyCard}>
           <TouchableOpacity
@@ -670,6 +677,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 14,
+    paddingTop: 24,
     paddingBottom: 80,
   },
   centerContent: {

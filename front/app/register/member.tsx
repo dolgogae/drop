@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axiosInstance from '../../utils/axiosInstance';
 import { useI18n } from '../../contexts/i18n';
 import styles from './styles';
@@ -40,8 +41,9 @@ export default function MemberRegisterScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
         <Text style={styles.title}>{t('member.title')}</Text>
 
         <Text style={styles.sectionTitle}>{t('info.additional')}</Text>
@@ -66,7 +68,8 @@ export default function MemberRegisterScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.linkBtn}>
           <Text style={styles.link}>{t('common.back')}</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

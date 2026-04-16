@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,11 +9,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CrossfitBoxSearch, { CrossfitBoxResult } from '../../components/CrossfitBoxSearch';
 import { getRecentSearchedBoxes, saveRecentSearchedBox, RecentBox } from '../../utils/recentStorage';
 
 export default function SearchScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [recentSearches, setRecentSearches] = useState<RecentBox[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -45,7 +46,7 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) + 12 }]}>
           <Text style={styles.title}>박스 검색</Text>
         </View>
 
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 40,
+    paddingTop: 28,
   },
   title: {
     fontSize: 28,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import CrossfitBoxSearch, { CrossfitBoxResult } from '../../components/CrossfitBoxSearch';
 import axiosInstance from '../../utils/axiosInstance';
 
@@ -34,10 +34,16 @@ describe('CrossfitBoxSearch', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    mockAxios.get.mockResolvedValue({
+      data: { data: [] },
+    });
   });
 
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+    });
     jest.useRealTimers();
   });
 
@@ -91,7 +97,9 @@ describe('CrossfitBoxSearch', () => {
     const input = getByPlaceholderText('예: 크로스핏 XXX');
     fireEvent.changeText(input, 'Test');
 
-    jest.advanceTimersByTime(500);
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
 
     await waitFor(() => {
       expect(mockAxios.get).toHaveBeenCalledWith('/crossfit-boxes/search', {
@@ -112,7 +120,9 @@ describe('CrossfitBoxSearch', () => {
     const input = getByPlaceholderText('예: 크로스핏 XXX');
     fireEvent.changeText(input, 'Test');
 
-    jest.advanceTimersByTime(500);
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
 
     await waitFor(() => {
       expect(mockAxios.get).toHaveBeenCalled();

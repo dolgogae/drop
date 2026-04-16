@@ -27,7 +27,6 @@ import java.util.Date;
 @RequestMapping("/gymsync")
 @RequiredArgsConstructor
 public class GymSyncController {
-
     private final JobLauncher jobLauncher;
     private final Job gymSyncJob;
     private final GymSyncTasklet gymSyncTasklet;
