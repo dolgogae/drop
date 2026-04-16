@@ -90,10 +90,15 @@ npm run test:coverage  # 커버리지 리포트
 
 ## 환경 변수
 
-### Frontend (`front/.env`)
+### Frontend
+`front/.env.example`를 `front/.env`로 복사한 뒤 로컬 값으로 채워서 사용합니다.
+
 ```env
-API_BASE_URL=http://localhost:8080/api
-GOOGLE_OAUTH_CLIENT_ID=your-google-oauth-client-id
+EXPO_PUBLIC_API_URL=http://localhost:8080/api
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-google-ios-client-id.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your-google-android-client-id.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY=your-google-maps-android-api-key
 ```
 
 ### Backend
